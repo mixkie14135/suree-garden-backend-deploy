@@ -1,0 +1,237 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ===== Enums =====
+enum payment_room_payment_method {
+  bank_transfer
+  promptpay
+}
+
+enum payment_banquet_payment_method {
+  bank_transfer
+  promptpay
+}
+
+enum payment_room_payment_status {
+  unpaid
+  pending
+  confirmed
+  rejected
+}
+
+enum payment_banquet_payment_status {
+  unpaid
+  pending
+  confirmed
+  rejected
+}
+
+enum banquet_room_status {
+  available
+  occupied
+  maintenance
+}
+
+enum room_status {
+  available
+  occupied
+  maintenance
+}
+
+enum reservation_room_status {
+  pending
+  confirmed
+  cancelled
+  checked_in
+  checked_out
+}
+
+enum reservation_banquet_status {
+  pending
+  confirmed
+  cancelled
+  completed
+}
+
+// ===== Tables =====
+
+model admin {
+  admin_id   Int       @id @default(autoincrement())
+  username   String    @unique(map: "username") @db.VarChar(50)
+  password   String    @db.VarChar(255)
+  full_name  String?   @db.VarChar(100)
+  email      String?   @db.VarChar(100)
+  phone      String?   @db.VarChar(20)
+  created_at DateTime? @default(now()) @db.Timestamp(0)
+  updated_at DateTime  @updatedAt
+}
+
+model banquet_room {
+  banquet_id     Int                  @id @default(autoincrement())
+  name           String               @db.VarChar(100)
+  capacity       Int
+  price_per_hour Decimal              @db.Decimal(10, 2)
+  status         banquet_room_status? @default(available)
+  description    String?              @db.Text
+  created_at     DateTime?            @default(now()) @db.Timestamp(0)
+  updated_at     DateTime             @updatedAt
+
+  banquet_image       banquet_image[]
+  reservation_banquet reservation_banquet[]
+}
+
+model banquet_image {
+  image_id    Int       @id @default(autoincrement())
+  banquet_id  Int
+  image_url   String    @db.VarChar(255)
+  description String?   @db.VarChar(255)
+  created_at  DateTime? @default(now()) @db.Timestamp(0)
+
+  banquet_room banquet_room @relation(fields: [banquet_id], references: [banquet_id], onDelete: Cascade, onUpdate: NoAction, map: "banquet_image_ibfk_1")
+
+  @@index([banquet_id], map: "banquet_id")
+}
+
+model customer {
+  customer_id Int       @id @default(autoincrement())
+  first_name  String    @db.VarChar(50)
+  last_name   String    @db.VarChar(50)
+  phone       String?   @db.VarChar(20)
+  email       String?   @db.VarChar(100)
+  created_at  DateTime? @default(now()) @db.Timestamp(0)
+  updated_at  DateTime  @updatedAt
+
+  reservation_banquet reservation_banquet[]
+  reservation_room    reservation_room[]
+
+  @@index([phone], map: "idx_customer_phone")
+}
+
+model room_type {
+  room_type_id Int      @id @default(autoincrement())
+  type_name    String   @db.VarChar(50)
+  description  String?  @db.Text
+  created_at   DateTime @default(now()) @db.Timestamp(0)
+  updated_at   DateTime @updatedAt
+
+  room room[]
+}
+
+model room {
+  room_id      Int          @id @default(autoincrement())
+  room_number  String       @unique(map: "room_number") @db.VarChar(25)
+  room_type_id Int
+  capacity     Int
+  price        Decimal      @db.Decimal(10, 2)
+  status       room_status? @default(available)
+  description  String?      @db.Text
+  created_at   DateTime?    @default(now()) @db.Timestamp(0)
+  updated_at   DateTime     @updatedAt
+
+  reservation_room reservation_room[]
+  room_type        room_type          @relation(fields: [room_type_id], references: [room_type_id], onDelete: NoAction, onUpdate: NoAction, map: "room_ibfk_1")
+  room_image       room_image[]
+
+  @@index([room_type_id], map: "room_type_id")
+}
+
+model room_image {
+  image_id    Int       @id @default(autoincrement())
+  room_id     Int
+  image_url   String    @db.VarChar(255)
+  description String?   @db.VarChar(255)
+  created_at  DateTime? @default(now()) @db.Timestamp(0)
+
+  room room @relation(fields: [room_id], references: [room_id], onDelete: Cascade, onUpdate: NoAction, map: "room_image_ibfk_1")
+
+  @@index([room_id], map: "room_id")
+}
+
+model reservation_room {
+  reservation_id Int                      @id @default(autoincrement())
+  customer_id    Int
+  room_id        Int
+  checkin_date   DateTime                 @db.Date
+  checkout_date  DateTime                 @db.Date
+  phone          String?                  @db.VarChar(20)
+  email          String?                  @db.VarChar(100)
+  status         reservation_room_status? @default(pending)
+  created_at     DateTime?                @default(now()) @db.Timestamp(0)
+  updated_at     DateTime                 @updatedAt
+  reservation_code String   @unique @db.VarChar(20)   // NEW
+  expires_at       DateTime? @db.Timestamp(0)  // NEW
+
+  payment_room payment_room[]
+
+  customer customer @relation(fields: [customer_id], references: [customer_id], onDelete: NoAction, onUpdate: NoAction, map: "reservation_room_ibfk_1")
+  room     room     @relation(fields: [room_id], references: [room_id], onDelete: NoAction, onUpdate: NoAction, map: "reservation_room_ibfk_2")
+
+  @@index([customer_id], map: "customer_id")
+  @@index([status], map: "idx_res_room_status")
+  @@index([room_id, checkin_date, checkout_date], map: "idx_room_dates")
+  @@index([room_id], map: "room_id")
+}
+
+model reservation_banquet {
+  reservation_id Int                         @id @default(autoincrement())
+  customer_id    Int
+  banquet_id     Int
+  event_date     DateTime                    @db.Date
+  start_time     DateTime                    @db.Time(0)
+  end_time       DateTime                    @db.Time(0)
+  phone          String?                     @db.VarChar(20)
+  email          String?                     @db.VarChar(100)
+  status         reservation_banquet_status? @default(pending)
+  created_at     DateTime?                   @default(now()) @db.Timestamp(0)
+  updated_at     DateTime                    @updatedAt
+  reservation_code String   @unique @db.VarChar(20)   // NEW
+  expires_at       DateTime? @db.Timestamp(0)  // NEW
+
+  payment_banquet payment_banquet[]
+
+  customer     customer     @relation(fields: [customer_id], references: [customer_id], onDelete: NoAction, onUpdate: NoAction, map: "reservation_banquet_ibfk_1")
+  banquet_room banquet_room @relation(fields: [banquet_id], references: [banquet_id], onDelete: NoAction, onUpdate: NoAction, map: "reservation_banquet_ibfk_2")
+
+  @@index([banquet_id], map: "banquet_id")
+  @@index([customer_id], map: "customer_id")
+  @@index([banquet_id, event_date, start_time, end_time], map: "idx_banquet_datetime")
+  @@index([status], map: "idx_res_banquet_status")
+}
+
+model payment_room {
+  payment_id     Int                          @id @default(autoincrement())
+  reservation_id Int
+  amount         Decimal                      @db.Decimal(10, 2)
+  payment_method payment_room_payment_method
+  payment_status payment_room_payment_status? @default(unpaid)
+  paid_at        DateTime?                    @db.Timestamp(0)
+  slip_image_url String?                      @db.VarChar(255)
+  created_at     DateTime                     @default(now()) @db.Timestamp(0)
+  updated_at     DateTime                     @updatedAt
+
+  reservation_room reservation_room @relation(fields: [reservation_id], references: [reservation_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_payment_room_res")
+
+  @@index([reservation_id], map: "idx_pay_room")
+}
+
+model payment_banquet {
+  payment_id     Int                             @id @default(autoincrement())
+  reservation_id Int
+  amount         Decimal                         @db.Decimal(10, 2)
+  payment_method payment_banquet_payment_method
+  payment_status payment_banquet_payment_status? @default(unpaid)
+  paid_at        DateTime?                       @db.Timestamp(0)
+  slip_image_url String?                         @db.VarChar(255)
+  created_at     DateTime                        @default(now()) @db.Timestamp(0)
+  updated_at     DateTime                        @updatedAt
+
+  reservation_banquet reservation_banquet @relation(fields: [reservation_id], references: [reservation_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_payment_banquet_res")
+
+  @@index([reservation_id], map: "idx_pay_banquet")
+}
