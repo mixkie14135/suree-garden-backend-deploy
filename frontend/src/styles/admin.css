@@ -1,0 +1,164 @@
+/* ========== ADMIN PAGE / TOOLBAR ========== */
+.adminPage .adminPageHeader{
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:16px; padding:12px 16px; background:#eef1e1; border:1px solid var(--line);
+  border-radius:12px;
+}
+.adminPage .adminPageHeader h2{
+  margin:0; display:flex; align-items:center; gap:10px; font-size:20px;
+}
+.headIcon{ display:inline-flex; width:22px; height:22px; }
+.headIcon svg{ width:22px; height:22px; fill:#6b7a46; }
+
+.tools{ display:flex; align-items:center; gap:12px; }
+.filter{ display:inline-flex; align-items:center; gap:8px; color:#666; }
+.filter select{ border:1px solid var(--line); border-radius:8px; padding:6px 8px; background:#fff; }
+
+/* Buttons */
+.btnPrimary{
+  background:var(--accent-500); color:#fff; border:1px solid var(--accent-700);
+  padding:10px 14px; border-radius:10px; font-weight:800; cursor:pointer;
+}
+.btnPrimary:hover{ background:var(--accent-700); }
+.btnIc{ font-weight:900; margin-right:6px; }
+
+/* ========== TABLE STYLE ========== */
+.card{ background:#fff; border:1px solid var(--line); border-radius:12px; }
+.table{ overflow:hidden; }
+
+/* โครงตาราง: [ห้อง] [รายละเอียด] [จำนวนคน] [ประเภท] [ราคา/คืน] [สถานะ] [รูปภาพ] */
+.table .tHead, .table .tRow{
+  display:grid;
+  grid-template-columns: 120px 1.6fr 150px 1.7fr 130px 120px 140px;
+  gap:12px; padding:14px 16px; align-items:center;
+}
+.table .tHead{
+  background:#f3f5e8; color:#6b6b6b; font-weight:800;
+}
+.table .tRow{ border-top:1px solid var(--line); }
+.table .tRow.alt{ background:#fafcf3; }
+
+/* ระยะช่องแรก (คอลัมน์ “ห้อง”) */
+.table .tHead > :first-child{ padding-left:30px; }
+.table .tRow  > :first-child{ padding-left:2px; }
+
+/* คอลัมน์ “ประเภท” ขยับเข้าให้ตรงหัว */
+.table .tHead .typeCol{ padding-left:130px; }
+.table .tRow  .typeCol{ padding-left:120px; }
+
+/* คอลัมน์ “ราคา/คืน” ชิดขวาให้หัว/ข้อมูลตรงกัน */
+.table .tHead .priceCol{ text-align:right; padding-right:48px; }
+.table .tRow  .priceCol{ text-align:right; padding-right:48px; }
+
+/* แถวคลิก/โฮเวอร์เพื่อแก้ไขได้ */
+.rowClickable{ cursor:pointer; transition:background .15s ease; }
+.rowClickable:hover{ background:#f6f9ea; }
+
+/* เซลล์ + ปุ่มไอคอนแก้ไข */
+.cell.no{ display:flex; align-items:center; gap:8px; }
+.iconBtn{
+  width:32px; height:32px; border-radius:8px; border:1px solid var(--line);
+  display:inline-flex; align-items:center; justify-content:center; background:#fff; cursor:pointer;
+}
+.iconBtn:hover{ background:var(--admin-hover); }
+.iconBtn svg{ width:18px; height:18px; fill:#455; }
+
+/* จัดรูปแบบตัวอักษรทั่วไป */
+.center{ text-align:center; }
+.right{ text-align:right; }
+
+/* Pill สถานะ */
+.pill{
+  display:inline-block; padding:6px 10px; border-radius:999px; font-weight:800; font-size:13px;
+}
+.pill.ok{ background:#dff2d9; color:#2f7a34; }
+.pill.bad{ background:#ffd8d8; color:#9c1f1f; }
+
+/* รูปตัวอย่าง + ปุ่มลบ */
+.thumbCell{ display:flex; align-items:center; gap:10px; justify-content:flex-end; }
+.thumbCell img{ width:90px; height:60px; object-fit:cover; border-radius:8px; border:1px solid var(--line); }
+.delBtn{
+  border:1px solid #e6b9b9; color:#9c1f1f; background:#fff; padding:6px 10px; border-radius:8px; cursor:pointer;
+}
+.delBtn:hover{ background:#ffecec; }
+
+/* ========== RESPONSIVE (คร่าวๆ) ========== */
+@media (max-width: 1200px){
+  .table .tHead, .table .tRow{
+    grid-template-columns: 100px 1.4fr 120px 1.6fr 120px 100px 120px;
+  }
+  .table .tHead .priceCol,
+  .table .tRow  .priceCol{ padding-right:32px; }
+  .table .tHead .typeCol{ padding-left:18px; }
+  .table .tRow  .typeCol{ padding-left:14px; }
+}
+
+@media (max-width: 920px){
+  /* ซ่อนคอลัมน์รูปภาพเพื่อให้ตารางพอดี */
+  .table .tHead > :nth-last-child(1),
+  .table .tRow  > :nth-last-child(1){ display:none; }
+  .table .tHead, .table .tRow{
+    grid-template-columns: 100px 1.4fr 120px 1.6fr 120px 100px;
+  }
+}
+
+/* ========== MODAL ========== */
+.modalOverlay{
+  position:fixed; inset:0; background:rgba(0,0,0,.35);
+  display:flex; align-items:center; justify-content:center;
+  z-index:2000;
+}
+.modalCard{
+  width:min(960px, 92vw);
+  max-height:86vh;
+  overflow:auto;
+  background:#fff; border-radius:16px;
+  box-shadow:0 20px 60px rgba(0,0,0,.25);
+  padding:22px;
+}
+.modalTitle{ margin:0 0 14px; font-size:20px; font-weight:900; color:#2b2b2b; }
+
+/* layout ฟอร์มซ้าย + แกลเลอรีขวา */
+.modalGrid{
+  display:grid; grid-template-columns: 1.1fr 1fr; gap:24px;
+}
+.modalForm .fRow{ margin-bottom:14px; }
+.modalForm .fRow.two{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.modalForm label{ display:block; font-weight:700; margin-bottom:6px; color:#444; }
+.modalForm input[type="text"],
+.modalForm input[type="number"],
+.modalForm select{
+  width:100%; border:1px solid var(--line); border-radius:10px; padding:10px 12px; background:#fff;
+}
+
+.facilityGrid{
+  display:grid; gap:8px; grid-template-columns:repeat(2, minmax(0, 1fr));
+}
+.chk{ display:flex; align-items:center; gap:8px; font-weight:600; color:#333; }
+.chk input{ width:16px; height:16px; }
+
+.modalGallery .gTitle{ font-weight:800; margin:8px 0 8px; color:#444; }
+.galleryGrid{
+  display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:10px;
+}
+.thumb{ position:relative; border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+.thumb img{ width:100%; height:130px; object-fit:cover; display:block; }
+.thumbDel{
+  position:absolute; top:6px; right:6px; width:28px; height:28px; line-height:26px;
+  border-radius:999px; border:1px solid #e5e5e5; background:#fff; cursor:pointer; font-weight:900;
+}
+
+.modalActions{
+  display:flex; justify-content:flex-end; gap:12px; margin-top:10px;
+}
+.btnText{
+  background:#fff; border:1px solid var(--line); border-radius:10px;
+  padding:10px 14px; font-weight:800; cursor:pointer; color:#444;
+}
+.btnText:hover{ background:#f4f4f4; }
+
+/* responsive modal */
+@media (max-width: 880px){
+  .modalGrid{ grid-template-columns:1fr; }
+  .galleryGrid{ grid-template-columns:repeat(2, minmax(0, 1fr)); }
+}

@@ -16,7 +16,13 @@ const banquetImageRoutes = require('./modules/banquet/image/banquetImage.routes'
 const app = express();
 const port = process.env.PORT || 8800;
 
-app.use(cors({ origin: true, credentials: true }));
+const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || 'http://localhost:5173'
+
+app.use(cors({ 
+  origin: FRONTEND_ORIGIN, 
+  credentials: true 
+}));
+
 app.use(express.json());
 app.use(cookieParser());
 
@@ -34,4 +40,5 @@ app.use('/api', banquetImageRoutes);
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
+  console.log(`CORS origin: ${FRONTEND_ORIGIN}`);
 });
