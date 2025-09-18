@@ -5,10 +5,18 @@ const prisma = require('../../../config/prisma');
 exports.uploadSlipBanquet = async (req, res) => {
   try {
     const { reservation_code, amount, method = 'bank_transfer' } = req.body;
-    const slipUrl = req.body.slip_url || null; // หรือใช้ multer เหมือนด้านบน
 
     if (!reservation_code || !amount) {
       return res.status(400).json({ message: 'reservation_code and amount are required' });
+    }
+
+    let slipUrl = null;
+    if (req.file) {
+      slipUrl = `/uploads/slips/${req.file.filename}`;
+    } else if (req.body.slip_url) {
+      slipUrl = req.body.slip_url;
+    } else {
+      return res.status(400).json({ message: 'slip file is required (key: slip)' });
     }
 
     const r = await prisma.reservation_banquet.findUnique({
@@ -34,6 +42,9 @@ exports.uploadSlipBanquet = async (req, res) => {
 
     res.status(201).json({ status: 'ok', message: 'Slip uploaded (pending)', data: pay });
   } catch (e) {
+    if (e instanceof Error && e.message && /Invalid file type|File too large/i.test(e.message)) {
+      return res.status(400).json({ message: e.message });
+    }
     res.status(500).json({ status: 'error', message: e.message });
   }
 };

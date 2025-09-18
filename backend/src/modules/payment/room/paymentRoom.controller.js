@@ -2,16 +2,29 @@ const prisma = require('../../../config/prisma');
 
 // ลูกค้าอัปสลิป (public)
 // Body: { reservation_code, amount, method? = 'bank_transfer', slip_url (ถ้ายังไม่ทำอัปโหลดไฟล์) }
+
 exports.uploadSlipRoom = async (req, res) => {
+    if (req.file) {
+    slipUrl = `/uploads/slips/${req.file.filename}`;
+    }
+
   try {
     const { reservation_code, amount, method = 'bank_transfer' } = req.body;
 
-    // ถ้าคุณใช้ multer สำหรับไฟล์จริง:
-    // const slipUrl = req.file ? `/uploads/slips/${req.file.filename}` : (req.body.slip_url || null);
-    const slipUrl = req.body.slip_url || null;
-
     if (!reservation_code || !amount) {
       return res.status(400).json({ message: 'reservation_code and amount are required' });
+    }
+
+    // ถ้ามีไฟล์จาก multer ให้ใช้ไฟล์นั้นก่อน
+    let slipUrl = null;
+    if (req.file) {
+      // เส้นทางที่ client เข้าได้ (เพราะเราเสิร์ฟ /uploads แบบ static)
+      slipUrl = `/uploads/slips/${req.file.filename}`;
+    } else if (req.body.slip_url) {
+      // fallback สำหรับทดสอบ (ลิงก์ภายนอก)
+      slipUrl = req.body.slip_url;
+    } else {
+      return res.status(400).json({ message: 'slip file is required (key: slip)' });
     }
 
     const r = await prisma.reservation_room.findUnique({
@@ -20,7 +33,6 @@ exports.uploadSlipRoom = async (req, res) => {
     });
     if (!r) return res.status(404).json({ message: 'Reservation not found' });
 
-    // อนุญาตจ่ายเฉพาะ pending ที่ยังไม่หมดเวลา
     if (r.status !== 'pending' || (r.expires_at && r.expires_at < new Date())) {
       return res.status(400).json({ message: 'Reservation is not eligible for payment' });
     }
@@ -28,7 +40,7 @@ exports.uploadSlipRoom = async (req, res) => {
     const pay = await prisma.payment_room.create({
       data: {
         reservation_id: r.reservation_id,
-        method, // 'bank_transfer' | 'promptpay'
+        method,
         amount: String(amount),
         payment_status: 'pending',
         slip_url: slipUrl
@@ -38,6 +50,10 @@ exports.uploadSlipRoom = async (req, res) => {
 
     res.status(201).json({ status: 'ok', message: 'Slip uploaded (pending)', data: pay });
   } catch (e) {
+    // จัดการ error จาก multer (เช่น ไฟล์ใหญ่/ชนิดไม่ถูกต้อง)
+    if (e instanceof Error && e.message && /Invalid file type|File too large/i.test(e.message)) {
+      return res.status(400).json({ message: e.message });
+    }
     res.status(500).json({ status: 'error', message: e.message });
   }
 };
@@ -89,3 +105,4 @@ exports.rejectRoomPayment = async (req, res) => {
     res.status(500).json({ status: 'error', message: e.message });
   }
 };
+

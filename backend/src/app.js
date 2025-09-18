@@ -3,6 +3,15 @@ const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 
+const path = require('path');
+const fs = require('fs');
+
+const { UPLOAD_ROOT, SLIP_DIR } = require('./utils/uploadPaths');
+
+// const uploadRoot = path.join(__dirname, 'uploads');
+// const slipDir = path.join(uploadRoot, 'slips');
+fs.mkdirSync(SLIP_DIR, { recursive: true });
+
 const adminRoutes = require('./modules/admin/admin.routes.js');
 const roomRoutes = require('./modules/room/room.routes.js');
 const banquetRoutes = require('./modules/banquet/banquet.routes.js');
@@ -29,6 +38,8 @@ app.use(express.json());
 app.use(cookieParser());
 
 app.get('/api/ping', (_req, res) => res.json({ message: 'API is working!' }));
+
+app.use('/uploads', express.static(UPLOAD_ROOT));
 
 app.use('/api', adminRoutes);
 app.use('/api', roomRoutes);
