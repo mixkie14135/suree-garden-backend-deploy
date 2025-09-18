@@ -1,12 +1,16 @@
+// controllers/reservationRoom.controller.js
 const prisma = require('../../../config/prisma');
 const { genReservationCode } = require('../../../utils/code_reservation');
 const {
   parseDateInput,
-  toUtcMidnight     
+  toUtcMidnight
 } = require('../../../utils/date');
 
-const PENDING_MINUTES = 15; // เวลาจำกัดแนบสลิป (นาที)
+const { resolveCustomerId, normalizePhoneTH } = require('../../../utils/customer');
+const { sendReservationEmail } = require('../../../utils/mailer');
 
+const PENDING_MINUTES = 15; // เวลาจำกัดแนบสลิป (นาที)
+const ALLOWED_STATUSES = ['pending', 'confirmed', 'checked_in', 'checked_out', 'cancelled', 'expired'];
 
 // =========================
 // CREATE: จองห้องพัก (ลูกค้าไม่ต้องล็อกอิน)
@@ -25,49 +29,43 @@ exports.createReservationRoom = async (req, res) => {
     if (!room_id || !checkin_date || !checkout_date) {
       return res.status(400).json({ message: 'room_id, checkin_date, checkout_date required' });
     }
+    if (!email && !customer_id) {
+      // แนะนำให้บังคับ email เพื่อส่งรหัสการจอง
+      return res.status(400).json({ message: 'email is required (or provide customer_id)' });
+    }
 
-    const inDate  = toUtcMidnight(parseDateInput(checkin_date));
-    const outDate = toUtcMidnight(parseDateInput(checkout_date));
+    const inParsed  = parseDateInput(checkin_date);
+    const outParsed = parseDateInput(checkout_date);
+    if (!inParsed || !outParsed) {
+      return res.status(400).json({ message: 'Invalid checkin_date or checkout_date' });
+    }
+
+    const inDate  = toUtcMidnight(inParsed);
+    const outDate = toUtcMidnight(outParsed);
     if (!(inDate < outDate)) {
       return res.status(400).json({ message: 'checkin_date must be before checkout_date' });
     }
 
-    // หา/สร้างลูกค้าเมื่อไม่ระบุ customer_id
-    let cid = customer_id ? Number(customer_id) : null;
-    if (!cid) {
-      if (!first_name || !last_name) {
-        return res.status(400).json({ message: 'first_name & last_name required when no customer_id' });
-      }
-      let customer = null;
-      if (phone || email) {
-        customer = await prisma.customer.findFirst({
-          where: { OR: [{ phone: phone || undefined }, { email: email || undefined }] }
+    // หา/สร้างลูกค้า (อีเมลเป็นตัวตนหลัก + จัดการเคสเบอร์ซ้ำต่างอีเมลด้วย 409)
+    let cid;
+    try {
+      cid = await resolveCustomerId(prisma, {
+        customer_id,
+        first_name,
+        last_name,
+        email,
+        phone
+      });
+    } catch (e) {
+      if (e.code === 'PHONE_CONFLICT') {
+        return res.status(409).json({
+          message: 'เบอร์นี้ถูกใช้งานกับอีเมลอีกบัญชีแล้ว กรุณาใช้ข้อมูลชุดเดิมหรือยืนยันกับแอดมิน'
         });
       }
-      if (!customer) {
-        customer = await prisma.customer.create({
-          data: { first_name, last_name, phone: phone || null, email: email || null }
-        });
-      }
-      cid = customer.customer_id;
+      return res.status(400).json({ message: e.message || 'resolve customer failed' });
     }
 
-    // กันจองซ้อน (ช่วงวันทับ) สำหรับสถานะที่ถือว่าจองจริง
-    const overlap = await prisma.reservation_room.findFirst({
-      where: {
-        room_id: Number(room_id),
-        status: { in: ['pending', 'confirmed', 'checked_in'] },
-        AND: [
-          { checkin_date:  { lt: outDate } },
-          { checkout_date: { gt: inDate } },
-        ],
-      },
-    });
-    if (overlap) {
-      return res.status(409).json({ message: 'Room is not available in selected dates' });
-    }
-
-    // สุ่ม reservation_code (ลองใหม่สูงสุด 5 รอบถ้าชน)
+    // เตรียมโค้ด และหมดเวลา
     let code = genReservationCode(8);
     for (let i = 0; i < 5; i++) {
       const exists = await prisma.reservation_room
@@ -76,35 +74,106 @@ exports.createReservationRoom = async (req, res) => {
       if (!exists) break;
       code = genReservationCode(8);
     }
-
     const expiresAt = new Date(Date.now() + PENDING_MINUTES * 60 * 1000);
 
-    // บันทึก
-    const created = await prisma.reservation_room.create({
-      data: {
-        customer_id: cid,
-        room_id: Number(room_id),
-        checkin_date: inDate,
-        checkout_date: outDate,
-        phone: phone || null,
-        email: email || null,
-        status: 'pending',
-        reservation_code: code,
-        expires_at: expiresAt
-      },
-      select: {
-        reservation_id: true,
-        reservation_code: true,
-        status: true,
-        checkin_date: true,
-        checkout_date: true,
-        expires_at: true,
-        room: { select: { room_id: true, room_number: true } },
-        customer: { select: { customer_id: true, first_name: true, last_name: true } }
+    // ดึงบัญชีโอนที่ active/default มาทำ snapshot (เพื่อแสดงให้ลูกค้าโอน)
+    const acc = await prisma.bank_account.findFirst({
+      where: { is_active: true },
+      orderBy: [{ is_default: 'desc' }, { bank_account_id: 'asc' }],
+      select: { bank_name: true, account_name: true, account_number: true, promptpay_id: true }
+    });
+    const paySnap = acc ? {
+      bank_name: acc.bank_name,
+      account_name: acc.account_name,
+      account_number: acc.account_number,
+      promptpay_id: acc.promptpay_id || null
+    } : null;
+
+    // ใช้ Transaction กัน race:
+    // - กันจองซ้อน (นับเฉพาะ confirmed/checked_in และ pending ที่ยังไม่หมดเวลา)
+    // - ค่อย create
+    const created = await prisma.$transaction(async (tx) => {
+      const now = new Date();
+      const overlap = await tx.reservation_room.findFirst({
+        where: {
+          room_id: Number(room_id),
+          AND: [
+            {
+              OR: [
+                { status: { in: ['confirmed', 'checked_in'] } },
+                { AND: [{ status: 'pending' }, { expires_at: { gt: now } }] }
+              ]
+            },
+            { checkin_date:  { lt: outDate } },
+            { checkout_date: { gt: inDate } },
+          ],
+        },
+        select: { reservation_id: true }
+      });
+      if (overlap) {
+        const err = new Error('OVERLAP');
+        err.type = 'OVERLAP';
+        throw err;
       }
+
+      return tx.reservation_room.create({
+        data: {
+          customer_id: cid,
+          room_id: Number(room_id),
+          checkin_date: inDate,
+          checkout_date: outDate,
+
+          // Snapshot ผู้ติดต่อ ณ ตอนจอง
+          contact_name: `${first_name || ''} ${last_name || ''}`.trim(),
+          contact_email: email || null,
+          contact_phone: normalizePhoneTH(phone) || null,
+
+          // สถานะ/โค้ด/หมดเวลาแนบสลิป
+          status: 'pending',
+          reservation_code: code,
+          expires_at: expiresAt,
+
+          // Snapshot บัญชีโอน + deadline ชำระ (อ่านง่าย)
+          pay_account_snapshot: paySnap,
+          payment_due_at: expiresAt
+        },
+        select: {
+          reservation_id: true,
+          reservation_code: true,
+          status: true,
+          checkin_date: true,
+          checkout_date: true,
+          expires_at: true,
+          pay_account_snapshot: true,
+          payment_due_at: true,
+          room: { select: { room_id: true, room_number: true } },
+          customer: { select: { customer_id: true, first_name: true, last_name: true } }
+        }
+      });
     });
 
-    // ✅ ส่ง reservation_code + expires_at ให้ลูกค้าใช้ทันที
+    // ส่งอีเมลยืนยัน (ไม่ให้ผิดพลาดเรื่องเมลทำให้จองล้ม)
+    if (email) {
+      const accountHtml = created.pay_account_snapshot ? `
+        <li>โอนเข้าบัญชี: <b>${created.pay_account_snapshot.bank_name}</b> 
+            เลขที่ <b>${created.pay_account_snapshot.account_number}</b> 
+            ชื่อบัญชี <b>${created.pay_account_snapshot.account_name}</b></li>` : '';
+      const summaryHtml = `
+        <ul>
+          <li>ห้องพัก: <b>${created.room.room_number}</b></li>
+          <li>เช็คอิน–เช็คเอาท์: <b>${checkin_date} – ${checkout_date}</b></li>
+          ${accountHtml}
+          <li>ชำระก่อน: <b>${created.payment_due_at?.toISOString() || created.expires_at?.toISOString()}</b></li>
+          <li>รหัสการจอง: <b>${created.reservation_code}</b></li>
+        </ul>`;
+      await sendReservationEmail(email, {
+        name: first_name || created.customer.first_name || '',
+        code: created.reservation_code,
+        summaryHtml
+      }).catch(() => {});
+    }
+
+    // ✅ ส่งข้อมูลให้ลูกค้า
     res.status(201).json({
       status: 'ok',
       message: 'Reservation created (pending)',
@@ -115,6 +184,8 @@ exports.createReservationRoom = async (req, res) => {
         checkin_date: created.checkin_date,
         checkout_date: created.checkout_date,
         expires_at: created.expires_at,
+        payment_due_at: created.payment_due_at,
+        pay_account_snapshot: created.pay_account_snapshot,
         room: created.room,
         customer: {
           id: created.customer.customer_id,
@@ -124,6 +195,9 @@ exports.createReservationRoom = async (req, res) => {
       }
     });
   } catch (err) {
+    if (err.type === 'OVERLAP') {
+      return res.status(409).json({ message: 'Room is not available in selected dates' });
+    }
     if (err.code === 'P2002' && err.meta?.target?.includes('reservation_code')) {
       return res.status(409).json({ message: 'Reservation code collision, please retry' });
     }
@@ -132,31 +206,64 @@ exports.createReservationRoom = async (req, res) => {
 };
 
 // =========================
-// LIST: รายการจอง (optional ใช้ฝั่ง admin / ภายใน)
+// LIST: รายการจอง (admin/backoffice) + แบ่งหน้า + filter
 // =========================
-exports.getReservationRooms = async (_req, res) => {
+exports.getReservationRooms = async (req, res) => {
   try {
-    const items = await prisma.reservation_room.findMany({
-      orderBy: { reservation_id: 'desc' },
-      select: {
-        reservation_id: true,
-        reservation_code: true,
-        status: true,
-        checkin_date: true,
-        checkout_date: true,
-        expires_at: true,
-        room: { select: { room_id: true, room_number: true } },
-        customer: { select: { customer_id: true, first_name: true, last_name: true } }
-      }
+    const { status, date_from, date_to, room_id } = req.query;
+
+    const page  = Math.max(parseInt(req.query.page) || 1, 1);
+    const limit = Math.min(Math.max(parseInt(req.query.limit) || 20, 1), 100);
+    const skip  = (page - 1) * limit;
+
+    const where = {};
+    if (status) where.status = status;
+    if (room_id) where.room_id = Number(room_id);
+
+    const from = date_from ? parseDateInput(date_from) : null;
+    const to   = date_to ? parseDateInput(date_to) : null;
+    if (from || to) {
+      where.checkin_date = where.checkin_date || {};
+      where.checkout_date = where.checkout_date || {};
+      if (from) where.checkout_date.gte = toUtcMidnight(from); // มีผลช่วงหลังจาก from
+      if (to)   where.checkin_date.lte  = toUtcMidnight(to);   // มีผลช่วงก่อนถึง to
+    }
+
+    const [items, total] = await Promise.all([
+      prisma.reservation_room.findMany({
+        where,
+        orderBy: { reservation_id: 'desc' },
+        skip,
+        take: limit,
+        select: {
+          reservation_id: true,
+          reservation_code: true,
+          status: true,
+          checkin_date: true,
+          checkout_date: true,
+          expires_at: true,
+          payment_due_at: true,
+          room: { select: { room_id: true, room_number: true } },
+          customer: { select: { customer_id: true, first_name: true, last_name: true } }
+        }
+      }),
+      prisma.reservation_room.count({ where })
+    ]);
+
+    res.json({
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+      items
     });
-    res.json(items);
   } catch (err) {
     res.status(500).json({ status: 'error', message: err.message });
   }
 };
 
 // =========================
-// GET BY ID: รายละเอียด (ใช้ฝั่ง admin/backoffice)
+// GET BY ID: รายละเอียด (admin/backoffice)
 // =========================
 exports.getReservationRoom = async (req, res) => {
   try {
@@ -186,9 +293,11 @@ exports.getReservationRoom = async (req, res) => {
       checkin_date: r.checkin_date,
       checkout_date: r.checkout_date,
       expires_at: r.expires_at,
-      last_payment_status: r.payment_room[0]?.payment_status || 'none',
-      paid_at: r.payment_room[0]?.paid_at || null,
-      amount: r.payment_room[0]?.amount || null,
+      payment_due_at: r.payment_due_at,
+      pay_account_snapshot: r.pay_account_snapshot || null,
+      last_payment_status: r.payment_room?.[0]?.payment_status || 'none',
+      paid_at: r.payment_room?.[0]?.paid_at || null,
+      amount: r.payment_room?.[0]?.amount || null,
       room: { room_id: r.room_id, room_number: r.room.room_number },
       customer: { id: r.customer_id, first_name: r.customer.first_name, last_name: r.customer.last_name }
     });
@@ -197,11 +306,13 @@ exports.getReservationRoom = async (req, res) => {
   }
 };
 
-
 // =========================
-// UPDATE (optional; ส่วนใหญ่ฝั่ง admin)
+/** UPDATE (admin):
+ *  - อัปเดตสถานะ/ช่วงวัน
+ *  - ถ้าแก้วัน → เช็กซ้อนทับใหม่ (นับเฉพาะ confirmed/checked_in และ pending ที่ยังไม่หมดเวลา)
+ *  - อัปเดต snapshot ติดต่อ (contact_*) ถ้ามีส่งมา
+ */
 // =========================
-
 exports.updateReservationRoom = async (req, res) => {
   try {
     const id = Number(req.params.id);
@@ -209,7 +320,12 @@ exports.updateReservationRoom = async (req, res) => {
       return res.status(400).json({ message: 'Invalid reservation_id' });
     }
 
-    const { status, checkin_date, checkout_date, phone, email } = req.body;
+    const { status, checkin_date, checkout_date, phone, email, contact_name } = req.body;
+
+    // validate สถานะ
+    if (status && !ALLOWED_STATUSES.includes(status)) {
+      return res.status(400).json({ message: 'invalid status' });
+    }
 
     // ใช้รายการปัจจุบันเป็นฐาน
     const current = await prisma.reservation_room.findUnique({
@@ -219,10 +335,10 @@ exports.updateReservationRoom = async (req, res) => {
 
     const data = {};
 
-    // (ออปชัน) กันค่า status แปลก ๆ
-    if (typeof status === 'string' && status.trim()) {
-      data.status = status.trim();
-    }
+    if (status) data.status = status;
+    if (contact_name !== undefined) data.contact_name = (contact_name || '').trim() || null;
+    if (phone !== undefined) data.contact_phone = normalizePhoneTH(phone) || null;
+    if (email !== undefined) data.contact_email = email || null;
 
     if (checkin_date) {
       const parsedIn = parseDateInput(checkin_date);
@@ -236,9 +352,6 @@ exports.updateReservationRoom = async (req, res) => {
       data.checkout_date = toUtcMidnight(parsedOut);
     }
 
-    if (phone !== undefined) data.phone = phone || null;
-    if (email !== undefined) data.email = email || null;
-
     // ถ้าแก้วัน → ตรวจลำดับวันและกันทับซ้อน
     if (data.checkin_date || data.checkout_date) {
       const newIn  = data.checkin_date  || current.checkin_date;
@@ -248,12 +361,18 @@ exports.updateReservationRoom = async (req, res) => {
         return res.status(400).json({ message: 'checkin_date must be before checkout_date' });
       }
 
+      const now = new Date();
       const clash = await prisma.reservation_room.findFirst({
         where: {
           reservation_id: { not: id },
           room_id: current.room_id,
-          status: { in: ['pending', 'confirmed', 'checked_in'] },
           AND: [
+            {
+              OR: [
+                { status: { in: ['confirmed', 'checked_in'] } },
+                { AND: [{ status: 'pending' }, { expires_at: { gt: now } }] }
+              ]
+            },
             { checkin_date:  { lt: newOut } },
             { checkout_date: { gt: newIn } },
           ],
@@ -274,7 +393,8 @@ exports.updateReservationRoom = async (req, res) => {
         status: true,
         checkin_date: true,
         checkout_date: true,
-        expires_at: true
+        expires_at: true,
+        payment_due_at: true
       }
     });
 
@@ -287,10 +407,8 @@ exports.updateReservationRoom = async (req, res) => {
   }
 };
 
-
-
 // =========================
-// DELETE (optional; ส่วนใหญ่ฝั่ง admin)
+// DELETE (admin)
 // =========================
 exports.deleteReservationRoom = async (req, res) => {
   try {
@@ -310,7 +428,7 @@ exports.deleteReservationRoom = async (req, res) => {
 };
 
 // =========================
-// STATUS BY CODE: ลูกค้าเช็กสถานะด้วย reservation_code
+// STATUS BY CODE (Public)
 // =========================
 exports.getReservationRoomStatusByCode = async (req, res) => {
   try {
@@ -328,12 +446,14 @@ exports.getReservationRoomStatusByCode = async (req, res) => {
 
     if (!reservation) return res.status(404).json({ message: 'Reservation not found' });
 
-    const lastPayment = reservation.payment_room[0] || null;
+    const lastPayment = reservation.payment_room?.[0] || null;
 
     res.json({
       code: reservation.reservation_code,
       status: reservation.status,
       expires_at: reservation.expires_at,
+      payment_due_at: reservation.payment_due_at,
+      pay_account_snapshot: reservation.pay_account_snapshot || null,
       checkin_date: reservation.checkin_date,
       checkout_date: reservation.checkout_date,
       last_payment_status: lastPayment ? lastPayment.payment_status : 'none',
@@ -350,4 +470,3 @@ exports.getReservationRoomStatusByCode = async (req, res) => {
     res.status(500).json({ status: 'error', message: err.message });
   }
 };
-

@@ -13,6 +13,8 @@ const reservationBanquetRoutes = require('./modules/reservation/banquet/reservat
 const roomImageRoutes = require('./modules/room/image/roomImage.routes');
 const banquetImageRoutes = require('./modules/banquet/image/banquetImage.routes');
 
+const paymentRoutes = require('./modules/payment/payment.routes');
+
 const app = express();
 const port = process.env.PORT || 8800;
 
@@ -37,6 +39,8 @@ app.use('/api', reservationBanquetRoutes);
 
 app.use('/api', roomImageRoutes);
 app.use('/api', banquetImageRoutes);
+
+app.use('/api', paymentRoutes);
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);

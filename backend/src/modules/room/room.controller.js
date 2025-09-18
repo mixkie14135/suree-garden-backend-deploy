@@ -237,7 +237,7 @@ exports.getAvailableRooms = async (req, res) => {
     if (inc.includes('images')) includeObj.room_image = true;
 
     const AND = [];
-
+    
     // ฟิลเตอร์ความจุ/ประเภท
     if (capacityGte) AND.push({ capacity: { gte: Number(capacityGte) } });
     if (typeId) AND.push({ room_type_id: Number(typeId) });

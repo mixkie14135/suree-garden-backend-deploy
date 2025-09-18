@@ -61,6 +61,23 @@ enum reservation_banquet_status {
 
 // ===== Tables =====
 
+model bank_account {
+  bank_account_id Int      @id @default(autoincrement())
+  bank_name       String   // ตัวอย่าง: "SCB", "KBank"
+  account_name    String   // ชื่อบัญชี
+  account_number  String   // "123-4-56789-0"
+  promptpay_id    String?  // (เผื่ออนาคต) เบอร์/เลขบัตรสำหรับ PromptPay
+  is_active       Boolean  @default(true)
+  is_default      Boolean  @default(false)
+
+  created_at      DateTime? @default(now())
+  updated_at      DateTime  @updatedAt
+
+  @@unique([account_number])
+  @@index([is_active, is_default])
+}
+
+
 model admin {
   admin_id   Int       @id @default(autoincrement())
   username   String    @unique(map: "username") @db.VarChar(50)
@@ -102,8 +119,8 @@ model customer {
   customer_id Int       @id @default(autoincrement())
   first_name  String    @db.VarChar(50)
   last_name   String    @db.VarChar(50)
-  phone       String?   @db.VarChar(20)
-  email       String?   @db.VarChar(100)
+  phone       String @unique   @db.VarChar(20) //add_phone_unique
+  email       String @unique   @db.VarChar(100) //add_email_unique
   created_at  DateTime? @default(now()) @db.Timestamp(0)
   updated_at  DateTime  @updatedAt
 
@@ -159,13 +176,27 @@ model reservation_room {
   room_id        Int
   checkin_date   DateTime                 @db.Date
   checkout_date  DateTime                 @db.Date
-  phone          String?                  @db.VarChar(20)
-  email          String?                  @db.VarChar(100)
   status         reservation_room_status? @default(pending)
+  expires_at       DateTime? @db.Timestamp(0)  // NEW
+  reservation_code String   @unique @db.VarChar(20) // NEW
+
+  contact_name     String?   // ชื่อ ณ ตอนจอง
+  contact_email    String?   // อีเมล ณ ตอนจอง
+  contact_phone    String?   // เบอร์ ณ ตอนจอง
+
   created_at     DateTime?                @default(now()) @db.Timestamp(0)
   updated_at     DateTime                 @updatedAt
-  reservation_code String   @unique @db.VarChar(20)   // NEW
-  expires_at       DateTime? @db.Timestamp(0)  // NEW
+  // phone          String?                  @db.VarChar(20)
+  // email          String?                  @db.VarChar(100)
+
+  // วัน/เวลา deadine ที่ต้องชำระ (จริงๆ ใช้ expires_at ก็ได้ ถ้าคุณใช้มันเป็น deadline)
+  payment_due_at        DateTime?   // แนะนำให้ set = expires_at ตอนสร้าง
+
+  // snapshot บัญชีโอนที่แสดงให้ลูกค้า (ตอนจอง)
+  pay_account_snapshot  Json?       // { bank_name, account_name, account_number, promptpay_id? }
+
+  // (ถ้ามีเลือกวิธีชำระในอนาคต)
+  // selected_payment_method String? // 'bank_transfer' | 'promptpay' | 'gateway_xxx
 
   payment_room payment_room[]
 
@@ -185,13 +216,21 @@ model reservation_banquet {
   event_date     DateTime                    @db.Date
   start_time     DateTime                    @db.Time(0)
   end_time       DateTime                    @db.Time(0)
-  phone          String?                     @db.VarChar(20)
-  email          String?                     @db.VarChar(100)
   status         reservation_banquet_status? @default(pending)
+  expires_at       DateTime? @db.Timestamp(0)  // NEW
+  reservation_code String   @unique @db.VarChar(20)   // NEW
+
+  contact_name     String?   // ชื่อ ณ ตอนจอง
+  contact_email    String?   // อีเมล ณ ตอนจอง
+  contact_phone    String?   // เบอร์ ณ ตอนจอง
+
   created_at     DateTime?                   @default(now()) @db.Timestamp(0)
   updated_at     DateTime                    @updatedAt
-  reservation_code String   @unique @db.VarChar(20)   // NEW
-  expires_at       DateTime? @db.Timestamp(0)  // NEW
+  // phone          String?                     @db.VarChar(20)
+  // email          String?                     @db.VarChar(100)
+
+  payment_due_at        DateTime?
+  pay_account_snapshot  Json?
 
   payment_banquet payment_banquet[]
 
@@ -205,33 +244,50 @@ model reservation_banquet {
 }
 
 model payment_room {
-  payment_id     Int                          @id @default(autoincrement())
-  reservation_id Int
-  amount         Decimal                      @db.Decimal(10, 2)
-  payment_method payment_room_payment_method
-  payment_status payment_room_payment_status? @default(unpaid)
-  paid_at        DateTime?                    @db.Timestamp(0)
-  slip_image_url String?                      @db.VarChar(255)
-  created_at     DateTime                     @default(now()) @db.Timestamp(0)
-  updated_at     DateTime                     @updatedAt
+  payment_id      Int                          @id @default(autoincrement())
+  reservation_id  Int
+  method          payment_room_payment_method  @default(bank_transfer)  // ตอนนี้ fix เป็นโอนผ่านธนาคาร
+  amount          Decimal                      @db.Decimal(10, 2)
+  payment_status  payment_room_payment_status  @default(pending)        // ลูกค้าอัปสลิป = pending
+  slip_url        String?                      // พาธไฟล์สลิป (local/S3)
+  payer_name      String?                      // ผู้โอน (optional)
+  payer_bank      String?                      // ธนาคารผู้โอน (optional)
+  transfer_time   DateTime?                    // เวลาโอนที่ลูกค้ากรอก (optional)
+  transfer_ref    String?                      // เลขอ้างอิง/หมายเหตุ (optional)
+  paid_at         DateTime?                    // แอดมินกดอนุมัติ -> ใส่ค่านี้
+  created_at      DateTime?                    @default(now())
+  updated_at      DateTime                     @updatedAt
 
-  reservation_room reservation_room @relation(fields: [reservation_id], references: [reservation_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_payment_room_res")
+  // fields สำหรับ “อนาคต” ถ้าใช้เกตเวย์: ปล่อยไว้ได้ แต่ยังไม่ใช้
+  gateway_provider String?                     // 'xxx' (อนาคต)
+  gateway_txn_id   String?                     // (อนาคต)
+  gateway_raw      Json?                       // (อนาคต)
 
-  @@index([reservation_id], map: "idx_pay_room")
+  reservation_room reservation_room            @relation(fields: [reservation_id], references: [reservation_id], onDelete: Cascade)
+
+  @@index([reservation_id, payment_status])
 }
 
 model payment_banquet {
-  payment_id     Int                             @id @default(autoincrement())
-  reservation_id Int
-  amount         Decimal                         @db.Decimal(10, 2)
-  payment_method payment_banquet_payment_method
-  payment_status payment_banquet_payment_status? @default(unpaid)
-  paid_at        DateTime?                       @db.Timestamp(0)
-  slip_image_url String?                         @db.VarChar(255)
-  created_at     DateTime                        @default(now()) @db.Timestamp(0)
-  updated_at     DateTime                        @updatedAt
+  payment_id      Int                             @id @default(autoincrement())
+  reservation_id  Int
+  method          payment_banquet_payment_method  @default(bank_transfer)
+  amount          Decimal                         @db.Decimal(10, 2)
+  payment_status  payment_banquet_payment_status  @default(pending)
+  slip_url        String?
+  payer_name      String?
+  payer_bank      String?
+  transfer_time   DateTime?
+  transfer_ref    String?
+  paid_at         DateTime?
+  created_at      DateTime?                       @default(now())
+  updated_at      DateTime                        @updatedAt
 
-  reservation_banquet reservation_banquet @relation(fields: [reservation_id], references: [reservation_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_payment_banquet_res")
+  gateway_provider String?
+  gateway_txn_id   String?
+  gateway_raw      Json?
 
-  @@index([reservation_id], map: "idx_pay_banquet")
+  reservation_banquet reservation_banquet         @relation(fields: [reservation_id], references: [reservation_id], onDelete: Cascade)
+
+  @@index([reservation_id, payment_status])
 }
