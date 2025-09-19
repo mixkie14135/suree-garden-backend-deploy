@@ -1,92 +1,91 @@
+// controllers/roomImage.controller.js
+const path = require('path');
+const fs = require('fs');
 const prisma = require('../../../config/prisma');
+const { UPLOAD_ROOT } = require('../../../utils/uploadPaths');
 
-// GET /api/rooms/:room_id/images
+function toPublicUrl(absPath) {
+  // แปลง path บนดิสก์ไปเป็น /uploads/...
+  const uploadsIdx = absPath.replace(/\\/g,'/').lastIndexOf('/uploads/');
+  if (uploadsIdx >= 0) return absPath.replace(/\\/g,'/').substring(uploadsIdx);
+  return null;
+}
+
 exports.listRoomImages = async (req, res) => {
-  try {
-    const room_id = Number(req.params.room_id);
-    if (!room_id) return res.status(400).json({ message: 'room_id invalid' });
-
-    // ตรวจว่าห้องมีจริง
-    const room = await prisma.room.findUnique({ where: { room_id } });
-    if (!room) return res.status(404).json({ message: 'Room not found' });
-
-    const images = await prisma.room_image.findMany({
-      where: { room_id },
-      orderBy: { image_id: 'asc' }
-    });
-    res.json({ room_id, images });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
+  const roomId = Number(req.params.room_id);
+  if (!Number.isInteger(roomId) || roomId <= 0) {
+    return res.status(400).json({ status: 'error', message: 'invalid room_id' });
   }
+  const images = await prisma.room_image.findMany({
+    where: { room_id: roomId },
+    orderBy: { image_id: 'asc' }
+  });
+  res.json({ status: 'ok', data: images });
 };
 
-// POST /api/rooms/:room_id/images
-// body: { image_url: string, description?: string }
 exports.createRoomImage = async (req, res) => {
-  try {
-    const room_id = Number(req.params.room_id);
-    const { image_url, description } = req.body;
-
-    if (!room_id) return res.status(400).json({ message: 'room_id invalid' });
-    if (!image_url) return res.status(400).json({ message: 'image_url required' });
-
-    // ตรวจว่าห้องมีจริง
-    const room = await prisma.room.findUnique({ where: { room_id } });
-    if (!room) return res.status(404).json({ message: 'Room not found' });
-
-    // (ออปชัน) จำกัดจำนวนรูปต่อห้อง เช่น 10 รูป
-    const count = await prisma.room_image.count({ where: { room_id } });
-    if (count >= 10) return res.status(400).json({ message: 'Image limit reached (10)' });
-
-    const created = await prisma.room_image.create({
-      data: { room_id, image_url, description: description || null }
-    });
-
-    res.status(201).json({ status: 'ok', data: created });
-  } catch (err) {
-    res.status(500).json({ status: 'error', message: err.message });
+  const roomId = Number(req.params.room_id);
+  if (!Number.isInteger(roomId) || roomId <= 0) {
+    return res.status(400).json({ status: 'error', message: 'invalid room_id' });
   }
-};
+  if (!req.file) {
+    return res.status(400).json({ status: 'error', message: 'file is required (field name: file)' });
+  }
 
-// DELETE /api/rooms/:room_id/images/:image_id
-exports.deleteRoomImage = async (req, res) => {
-  try {
-    const room_id = Number(req.params.room_id);
-    const image_id = Number(req.params.image_id);
-    if (!room_id || !image_id) return res.status(400).json({ message: 'ids invalid' });
+  const description = (req.body.description || '').trim() || null;
 
-    // เช็คเจ้าของรูปให้ตรงห้อง
-    const img = await prisma.room_image.findUnique({ where: { image_id } });
-    if (!img || img.room_id !== room_id) {
-      return res.status(404).json({ message: 'Image not found for this room' });
+  // สร้าง public url (เสิร์ฟด้วย app.use('/uploads', ...))
+  let imageUrl = toPublicUrl(req.file.path);
+  if (!imageUrl) {
+    // fallback เผื่อโครงสร้าง path ต่าง: /uploads/rooms/:room_id/:filename
+    imageUrl = `/uploads/rooms/${roomId}/${req.file.filename}`;
+  }
+
+  const created = await prisma.room_image.create({
+    data: {
+      room_id: roomId,
+      image_url: imageUrl,
+      description
     }
+  });
 
-    await prisma.room_image.delete({ where: { image_id } });
-    res.json({ status: 'ok', message: `Image ${image_id} deleted` });
-  } catch (err) {
-    res.status(500).json({ status: 'error', message: err.message });
-  }
+  res.status(201).json({ status: 'ok', data: created });
 };
 
-// (ออปชัน) PUT /api/rooms/:room_id/images/:image_id
-// body: { description?: string }
 exports.updateRoomImage = async (req, res) => {
-  try {
-    const room_id = Number(req.params.room_id);
-    const image_id = Number(req.params.image_id);
-    const { description } = req.body;
-
-    const img = await prisma.room_image.findUnique({ where: { image_id } });
-    if (!img || img.room_id !== room_id) {
-      return res.status(404).json({ message: 'Image not found for this room' });
-    }
-
-    const updated = await prisma.room_image.update({
-      where: { image_id },
-      data: { description: description ?? img.description }
-    });
-    res.json({ status: 'ok', data: updated });
-  } catch (err) {
-    res.status(500).json({ status: 'error', message: err.message });
+  const imageId = Number(req.params.image_id);
+  if (!Number.isInteger(imageId) || imageId <= 0) {
+    return res.status(400).json({ status: 'error', message: 'invalid image_id' });
   }
+  const desc = (req.body.description ?? '').toString().trim() || null;
+
+  const updated = await prisma.room_image.update({
+    where: { image_id: imageId },
+    data: { description: desc }
+  });
+  res.json({ status: 'ok', data: updated });
+};
+
+exports.deleteRoomImage = async (req, res) => {
+  const imageId = Number(req.params.image_id);
+  if (!Number.isInteger(imageId) || imageId <= 0) {
+    return res.status(400).json({ status: 'error', message: 'invalid image_id' });
+  }
+
+  // หา record เพื่อลบไฟล์จริง (ตัวเลือก)
+  const rec = await prisma.room_image.findUnique({ where: { image_id: imageId } });
+  if (!rec) return res.status(404).json({ status: 'error', message: 'image not found' });
+
+  // พยายามลบไฟล์จริง (ถ้าอยู่ภายใต้ UPLOAD_ROOT)
+  try {
+    if (rec.image_url?.startsWith('/uploads/')) {
+      const abs = path.join(UPLOAD_ROOT, rec.image_url.replace('/uploads/', ''));
+      if (abs.startsWith(UPLOAD_ROOT) && fs.existsSync(abs)) {
+        fs.unlinkSync(abs);
+      }
+    }
+  } catch {}
+
+  await prisma.room_image.delete({ where: { image_id: imageId } });
+  res.json({ status: 'ok' });
 };

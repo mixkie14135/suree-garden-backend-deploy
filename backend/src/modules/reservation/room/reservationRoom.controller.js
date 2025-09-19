@@ -3,7 +3,8 @@ const prisma = require('../../../config/prisma');
 const { genReservationCode } = require('../../../utils/code_reservation');
 const {
   parseDateInput,
-  toUtcMidnight
+  toUtcMidnight,
+  formatDateTimeThai
 } = require('../../../utils/date');
 
 const { resolveCustomerId, normalizePhoneTH } = require('../../../utils/customer');
@@ -159,13 +160,13 @@ exports.createReservationRoom = async (req, res) => {
             เลขที่ <b>${created.pay_account_snapshot.account_number}</b> 
             ชื่อบัญชี <b>${created.pay_account_snapshot.account_name}</b></li>` : '';
       const summaryHtml = `
-        <ul>
-          <li>ห้องพัก: <b>${created.room.room_number}</b></li>
-          <li>เช็คอิน–เช็คเอาท์: <b>${checkin_date} – ${checkout_date}</b></li>
-          ${accountHtml}
-          <li>ชำระก่อน: <b>${created.payment_due_at?.toISOString() || created.expires_at?.toISOString()}</b></li>
-          <li>รหัสการจอง: <b>${created.reservation_code}</b></li>
-        </ul>`;
+      <ul>
+        <li>ห้องพัก: <b>${created.room.room_number}</b></li>
+        <li>เช็คอิน–เช็คเอาท์: <b>${checkin_date} – ${checkout_date}</b></li>
+        ${accountHtml}
+        <li>ชำระก่อน: <b>${formatDateTimeThai(created.payment_due_at || created.expires_at)}</b></li>
+        <li>รหัสการจอง: <b>${created.reservation_code}</b></li>
+      </ul>`;
       await sendReservationEmail(email, {
         name: first_name || created.customer.first_name || '',
         code: created.reservation_code,

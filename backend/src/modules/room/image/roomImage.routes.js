@@ -1,8 +1,9 @@
 const express = require('express');
 const { requireAdminAuth } = require('../../../middlewares/authAdmin'); // ปรับ path ให้ตรงของคุณ
 const {
-  listRoomImages, createRoomImage, deleteRoomImage, updateRoomImage
+  listRoomImages, createRoomImage, updateRoomImage, deleteRoomImage
 } = require('./roomImage.controller');
+const { uploadRoomImage } = require('../../../middlewares/uploadRoomImage');
 
 const router = express.Router();
 
@@ -10,7 +11,7 @@ const router = express.Router();
 router.get('/rooms/:room_id/images', listRoomImages);
 
 // เพิ่ม/แก้/ลบ: เฉพาะแอดมิน
-router.post('/rooms/:room_id/images', requireAdminAuth, createRoomImage);
+router.post('/rooms/:room_id/images', requireAdminAuth, uploadRoomImage.single('file'), createRoomImage);
 router.put('/rooms/:room_id/images/:image_id', requireAdminAuth, updateRoomImage);
 router.delete('/rooms/:room_id/images/:image_id', requireAdminAuth, deleteRoomImage);
 

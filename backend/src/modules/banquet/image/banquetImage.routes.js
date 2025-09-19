@@ -1,16 +1,17 @@
 const express = require('express');
-const { requireAdminAuth } = require('../../../middlewares/authAdmin'); // ปรับ path ให้ตรงโปรเจกต์
+const { requireAdminAuth } = require('../../../middlewares/authAdmin');
 const {
   listBanquetImages, createBanquetImage, updateBanquetImage, deleteBanquetImage
 } = require('./banquetImage.controller');
+const { uploadBanquetImage } = require('../../../middlewares/uploadBanquetImage');
 
 const router = express.Router();
 
-// อ่านรูป: อาจเปิดเป็น public ได้
+// public read
 router.get('/banquets/:banquet_id/images', listBanquetImages);
 
-// เพิ่ม/แก้/ลบ: admin เท่านั้น
-router.post('/banquets/:banquet_id/images', requireAdminAuth, createBanquetImage);
+// admin write
+router.post('/banquets/:banquet_id/images', requireAdminAuth, uploadBanquetImage.single('file'), createBanquetImage);
 router.put('/banquets/:banquet_id/images/:image_id', requireAdminAuth, updateBanquetImage);
 router.delete('/banquets/:banquet_id/images/:image_id', requireAdminAuth, deleteBanquetImage);
 

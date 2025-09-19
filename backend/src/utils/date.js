@@ -36,10 +36,20 @@ function toUtcMidnight(dateObj) {
   ));
 }
 
+function formatDateTimeThai(date) {
+  if (!date) return '';
+  return new Intl.DateTimeFormat('th-TH', {
+    dateStyle: 'long',
+    timeStyle: 'short'
+  }).format(new Date(date));
+}
+
+
 module.exports = {
   parseDateInput,
   timeToMinutes,
   isOverlapMinutes,
   combineDateAndTimeUTC,
-  toUtcMidnight
+  toUtcMidnight,
+  formatDateTimeThai
 };

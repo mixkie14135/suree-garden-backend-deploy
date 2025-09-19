@@ -11,6 +11,7 @@ const { UPLOAD_ROOT, SLIP_DIR } = require('./utils/uploadPaths');
 // const uploadRoot = path.join(__dirname, 'uploads');
 // const slipDir = path.join(uploadRoot, 'slips');
 fs.mkdirSync(SLIP_DIR, { recursive: true });
+fs.mkdirSync(UPLOAD_ROOT, { recursive: true });
 
 const adminRoutes = require('./modules/admin/admin.routes.js');
 const roomRoutes = require('./modules/room/room.routes.js');

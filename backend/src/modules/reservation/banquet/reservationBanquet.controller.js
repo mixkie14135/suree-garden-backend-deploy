@@ -6,7 +6,8 @@ const {
   timeToMinutes,
   isOverlapMinutes,
   combineDateAndTimeUTC,
-  toUtcMidnight
+  toUtcMidnight,
+  formatDateTimeThai
 } = require('../../../utils/date');
 
 const { resolveCustomerId, normalizePhoneTH } = require('../../../utils/customer');
@@ -172,9 +173,9 @@ exports.createReservationBanquet = async (req, res) => {
       const summaryHtml = `
         <ul>
           <li>ห้องจัดเลี้ยง: <b>${created.banquet_room.name}</b></li>
-          <li>วันที่เวลา: <b>${event_date} ${start_time}–${end_time}</b></li>
+          <li>วันที่เวลา: <b>${event_date} ${'ตั้งแต่'} ${start_time}–${end_time}</b></li>
           ${accountHtml}
-          <li>ชำระก่อน: <b>${created.payment_due_at?.toISOString() || created.expires_at?.toISOString()}</b></li>
+          <li>ชำระก่อน: <b>${formatDateTimeThai(created.payment_due_at || created.expires_at)}</b></li>
           <li>รหัสการจอง: <b>${created.reservation_code}</b></li>
         </ul>`;
       await sendReservationEmail(email, {
