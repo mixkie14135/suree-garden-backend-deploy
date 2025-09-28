@@ -106,3 +106,24 @@ exports.rejectRoomPayment = async (req, res) => {
   }
 };
 
+exports.getRoomPaymentById = async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) return res.status(400).json({ status:'error', message:'invalid id' });
+
+  const p = await prisma.payment_room.findUnique({ where: { payment_id: id } });
+  if (!p) return res.status(404).json({ status:'error', message:'not found' });
+
+  // p.slip_url จะเป็น /uploads/slips/... เปิดดูได้เลย
+  res.json({ status:'ok', data: p });
+};
+
+exports.listRoomPayments = async (req, res) => {
+  const reservationId = req.query.reservation_id ? Number(req.query.reservation_id) : undefined;
+  const where = reservationId ? { reservation_id: reservationId } : {};
+  const list = await prisma.payment_room.findMany({
+    where,
+    orderBy: [{ created_at: 'desc' }, { payment_id: 'desc' }]
+  });
+  res.json({ status:'ok', data: list });
+};
+

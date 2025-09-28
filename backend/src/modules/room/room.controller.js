@@ -301,3 +301,43 @@ exports.createRoomType = async (req, res) => {
   }
 };
 
+exports.getRoomAvailability = async (req, res) => {
+  try {
+    const roomId = Number(req.params.id);
+    const { checkin, checkout } = req.query;
+
+    if (!roomId || !checkin || !checkout) {
+      return res.status(400).json({ message: 'roomId, checkin, checkout required' });
+    }
+
+    const inDate  = new Date(checkin);
+    const outDate = new Date(checkout);
+    if (isNaN(inDate) || isNaN(outDate) || outDate <= inDate) {
+      return res.status(400).json({ message: 'invalid date range' });
+    }
+
+    // ปรับชุดสถานะตามระบบจริงของคุณ: กันห้องช่วง "จองสำเร็จ/ชำระแล้ว/กำลังรอจ่าย (ถ้าต้องการ)"
+    const BLOCKING_STATUSES = ['CONFIRMED', 'PAID']; // ใส่ 'PENDING_PAYMENT' ถ้าจะกั้นช่วงรอจ่าย
+
+    // เงื่อนไขทับซ้อนมาตรฐาน: (existing.checkin < requested.checkout) && (existing.checkout > requested.checkin)
+    const overlap = await prisma.reservation_room.findFirst({
+    where: {
+      room_id: roomId,
+      checkin_date:  { lt: outDate },
+      checkout_date: { gt: inDate }
+    },
+    select: { reservation_id: true }
+    });
+
+
+    return res.json({
+      room_id: roomId,
+      checkin,
+      checkout,
+      available: !overlap
+    });
+  } catch (err) {
+    return res.status(500).json({ status: 'error', message: err.message });
+  }
+};
+
