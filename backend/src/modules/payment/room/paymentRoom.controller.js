@@ -1,13 +1,8 @@
 const prisma = require('../../../config/prisma');
+const policy = require('../../../config/reservationPolicy');
 
 // ลูกค้าอัปสลิป (public)
-// Body: { reservation_code, amount, method? = 'bank_transfer', slip_url (ถ้ายังไม่ทำอัปโหลดไฟล์) }
-
 exports.uploadSlipRoom = async (req, res) => {
-    if (req.file) {
-    slipUrl = `/uploads/slips/${req.file.filename}`;
-    }
-
   try {
     const { reservation_code, amount, method = 'bank_transfer' } = req.body;
 
@@ -15,13 +10,10 @@ exports.uploadSlipRoom = async (req, res) => {
       return res.status(400).json({ message: 'reservation_code and amount are required' });
     }
 
-    // ถ้ามีไฟล์จาก multer ให้ใช้ไฟล์นั้นก่อน
     let slipUrl = null;
     if (req.file) {
-      // เส้นทางที่ client เข้าได้ (เพราะเราเสิร์ฟ /uploads แบบ static)
       slipUrl = `/uploads/slips/${req.file.filename}`;
     } else if (req.body.slip_url) {
-      // fallback สำหรับทดสอบ (ลิงก์ภายนอก)
       slipUrl = req.body.slip_url;
     } else {
       return res.status(400).json({ message: 'slip file is required (key: slip)' });
@@ -37,20 +29,30 @@ exports.uploadSlipRoom = async (req, res) => {
       return res.status(400).json({ message: 'Reservation is not eligible for payment' });
     }
 
-    const pay = await prisma.payment_room.create({
-      data: {
-        reservation_id: r.reservation_id,
-        method,
-        amount: String(amount),
-        payment_status: 'pending',
-        slip_url: slipUrl
-      },
-      select: { payment_id: true, payment_status: true, slip_url: true }
+    const newExpire = new Date(Date.now() + policy.pendingWithSlipExpireMinutes * 60 * 1000);
+
+    const result = await prisma.$transaction(async (tx) => {
+      const pay = await tx.payment_room.create({
+        data: {
+          reservation_id: r.reservation_id,
+          method,
+          amount: String(amount),
+          payment_status: 'pending',
+          slip_url: slipUrl
+        },
+        select: { payment_id: true, payment_status: true, slip_url: true }
+      });
+
+      await tx.reservation_room.update({
+        where: { reservation_id: r.reservation_id },
+        data: { expires_at: newExpire }
+      });
+
+      return pay;
     });
 
-    res.status(201).json({ status: 'ok', message: 'Slip uploaded (pending)', data: pay });
+    res.status(201).json({ status: 'ok', message: `Slip uploaded (pending). Hold +${policy.pendingWithSlipExpireMinutes}m`, data: result });
   } catch (e) {
-    // จัดการ error จาก multer (เช่น ไฟล์ใหญ่/ชนิดไม่ถูกต้อง)
     if (e instanceof Error && e.message && /Invalid file type|File too large/i.test(e.message)) {
       return res.status(400).json({ message: e.message });
     }
@@ -70,9 +72,15 @@ exports.approveRoomPayment = async (req, res) => {
         select: { payment_id: true, reservation_id: true }
       });
 
+      // ปัดตกใบอื่นที่ยัง pending ของ reservation เดียวกัน
+      await tx.payment_room.updateMany({
+        where: { reservation_id: p.reservation_id, payment_id: { not: p.payment_id }, payment_status: 'pending' },
+        data: { payment_status: 'rejected' }
+      });
+
       await tx.reservation_room.update({
         where: { reservation_id: p.reservation_id },
-        data: { status: 'confirmed' }
+        data: { status: 'confirmed', expires_at: null }
       });
 
       return p;
@@ -91,13 +99,23 @@ exports.approveRoomPayment = async (req, res) => {
 exports.rejectRoomPayment = async (req, res) => {
   try {
     const id = Number(req.params.id);
-    const p = await prisma.payment_room.update({
-      where: { payment_id: id },
-      data: { payment_status: 'rejected' },
-      select: { payment_id: true, payment_status: true }
+    const p = await prisma.$transaction(async (tx) => {
+      const pay = await tx.payment_room.update({
+        where: { payment_id: id },
+        data: { payment_status: 'rejected' },
+        select: { payment_id: true, reservation_id: true }
+      });
+
+      // ปล่อยคิว: ยกเลิกการจอง (ถ้าไม่อยากปล่อย ให้คอมเมนต์ส่วนนี้)
+      await tx.reservation_room.update({
+        where: { reservation_id: pay.reservation_id },
+        data: { status: 'cancelled' }
+      });
+
+      return pay;
     });
 
-    res.json({ status: 'ok', message: 'Payment rejected', data: p });
+    res.json({ status: 'ok', message: 'Payment rejected & reservation cancelled', data: p });
   } catch (e) {
     if (e.code === 'P2025') {
       return res.status(404).json({ message: 'Payment not found' });
@@ -113,7 +131,6 @@ exports.getRoomPaymentById = async (req, res) => {
   const p = await prisma.payment_room.findUnique({ where: { payment_id: id } });
   if (!p) return res.status(404).json({ status:'error', message:'not found' });
 
-  // p.slip_url จะเป็น /uploads/slips/... เปิดดูได้เลย
   res.json({ status:'ok', data: p });
 };
 
@@ -126,4 +143,3 @@ exports.listRoomPayments = async (req, res) => {
   });
   res.json({ status:'ok', data: list });
 };
-

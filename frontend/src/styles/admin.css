@@ -1,8 +1,13 @@
-/* ========== ADMIN PAGE / TOOLBAR ========== */
+/* =========================================================
+   ADMIN UI (header, table, modal) – replace whole file
+   Assumes global vars: --line, --accent-500, --accent-700, --admin-hover
+   ========================================================= */
+
+/* ========== HEADER / TOOLBAR ========== */
 .adminPage .adminPageHeader{
   display:flex; align-items:center; justify-content:space-between;
-  margin-bottom:16px; padding:12px 16px; background:#eef1e1; border:1px solid var(--line);
-  border-radius:12px;
+  margin-bottom:16px; padding:12px 16px;
+  background:#eef1e1; border:1px solid var(--line); border-radius:12px;
 }
 .adminPage .adminPageHeader h2{
   margin:0; display:flex; align-items:center; gap:10px; font-size:20px;
@@ -22,50 +27,67 @@
 .btnPrimary:hover{ background:var(--accent-700); }
 .btnIc{ font-weight:900; margin-right:6px; }
 
-/* ========== TABLE STYLE ========== */
+/* =========================================================
+   TABLE (ADMIN ROOMS)
+   โครง: [ห้อง] [รายละเอียด] [จำนวนคน] [ประเภท] [ราคา/คืน] [สถานะ] [รูปภาพ]
+   ========================================================= */
 .card{ background:#fff; border:1px solid var(--line); border-radius:12px; }
 .table{ overflow:hidden; }
 
-/* โครงตาราง: [ห้อง] [รายละเอียด] [จำนวนคน] [ประเภท] [ราคา/คืน] [สถานะ] [รูปภาพ] */
-.table .tHead, .table .tRow{
+.adminRooms .tHead,
+.adminRooms .tRow{
   display:grid;
-  grid-template-columns: 120px 1.6fr 150px 1.7fr 130px 120px 140px;
-  gap:12px; padding:14px 16px; align-items:center;
+  grid-template-columns: 180px 1.8fr 90px 1.3fr 140px 110px 170px;
+  gap:16px; padding:14px 18px; align-items:center;
 }
-.table .tHead{
-  background:#f3f5e8; color:#6b6b6b; font-weight:800;
+.adminRooms .tHead{
+  background:#f6f8ee; color:#6b6b6b; font-weight:800;
 }
-.table .tRow{ border-top:1px solid var(--line); }
-.table .tRow.alt{ background:#fafcf3; }
+.adminRooms .tRow{
+  border-top:1px solid var(--line);
+  min-height:84px; /* ให้แต่ละแถวสูงพอดีและไม่ยืด */
+}
 
-/* ระยะช่องแรก (คอลัมน์ “ห้อง”) */
-.table .tHead > :first-child{ padding-left:30px; }
-.table .tRow  > :first-child{ padding-left:2px; }
-
-/* คอลัมน์ “ประเภท” ขยับเข้าให้ตรงหัว */
-.table .tHead .typeCol{ padding-left:130px; }
-.table .tRow  .typeCol{ padding-left:120px; }
-
-/* คอลัมน์ “ราคา/คืน” ชิดขวาให้หัว/ข้อมูลตรงกัน */
-.table .tHead .priceCol{ text-align:right; padding-right:48px; }
-.table .tRow  .priceCol{ text-align:right; padding-right:48px; }
-
-/* แถวคลิก/โฮเวอร์เพื่อแก้ไขได้ */
-.rowClickable{ cursor:pointer; transition:background .15s ease; }
-.rowClickable:hover{ background:#f6f9ea; }
-
-/* เซลล์ + ปุ่มไอคอนแก้ไข */
-.cell.no{ display:flex; align-items:center; gap:8px; }
-.iconBtn{
+/* ห้อง (ปุ่มแก้ไขซ้าย + ข้อความขวา) */
+.cell--room{
+  display:grid;
+  grid-template-columns: 40px 1fr; /* 40px ปุ่ม, ที่เหลือข้อความ */
+  gap:10px;
+  align-items:center;
+}
+.roomEdit{
   width:32px; height:32px; border-radius:8px; border:1px solid var(--line);
-  display:inline-flex; align-items:center; justify-content:center; background:#fff; cursor:pointer;
+  display:inline-flex; align-items:center; justify-content:center;
+  background:#fff; cursor:pointer;
 }
-.iconBtn:hover{ background:var(--admin-hover); }
-.iconBtn svg{ width:18px; height:18px; fill:#455; }
+.roomEdit:hover{ background:var(--admin-hover); }
+.roomEdit svg{ width:18px; height:18px; fill:#455; }
 
-/* จัดรูปแบบตัวอักษรทั่วไป */
+/* กล่องข้อความขวาของปุ่ม */
+.roomMeta{
+  display:flex; align-items:baseline; gap:8px; min-width:0;
+}
+.roomTitle{ font-size:12px; color:#888; white-space:nowrap; }
+.roomNo{ font-weight:900; font-size:16px; color:#2b2b2b; white-space:nowrap; }
+
+/* รายละเอียด (ตัดบรรทัด 2 บรรทัด) */
+.cell--detail .detailClamp{
+  color:#444;
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+  overflow:hidden;
+}
+
+/* alignment ทั่วไป */
 .center{ text-align:center; }
 .right{ text-align:right; }
+
+/* ราคา/คืน (แท็ก) */
+.priceTag{
+  display:inline-block; font-weight:800;
+  background:#f1f4e6; border:1px solid #dde6c8; border-radius:10px;
+  padding:6px 10px;
+}
+.priceTag small{ font-weight:600; color:#666; }
 
 /* Pill สถานะ */
 .pill{
@@ -75,53 +97,68 @@
 .pill.bad{ background:#ffd8d8; color:#9c1f1f; }
 
 /* รูปตัวอย่าง + ปุ่มลบ */
-.thumbCell{ display:flex; align-items:center; gap:10px; justify-content:flex-end; }
-.thumbCell img{ width:90px; height:60px; object-fit:cover; border-radius:8px; border:1px solid var(--line); }
-.delBtn{
-  border:1px solid #e6b9b9; color:#9c1f1f; background:#fff; padding:6px 10px; border-radius:8px; cursor:pointer;
+.cell--thumb{
+  display:flex; align-items:center; justify-content:flex-end; gap:10px;
 }
-.delBtn:hover{ background:#ffecec; }
+.thumbMini{
+  position:relative; width:86px; height:56px;
+  border:1px solid var(--line); border-radius:8px; overflow:hidden; background:#fafafa;
+}
+.thumbMini img{ width:100%; height:100%; object-fit:cover; display:block; }
+.thumbMini .count{
+  position:absolute; right:6px; bottom:6px; padding:2px 6px;
+  background:rgba(0,0,0,.6); color:#fff; font-size:11px; border-radius:999px;
+}
+.rowActions .btnText{
+  background:#fff; border:1px solid var(--line); border-radius:10px;
+  padding:8px 12px; font-weight:800; cursor:pointer; color:#444;
+}
+.rowActions .btnText:hover{ background:#f4f4f4; }
+.rowActions .btnText.danger{ border-color:#e6b9b9; color:#9c1f1f; }
+.rowActions .btnText.danger:hover{ background:#ffecec; }
 
-/* ========== RESPONSIVE (คร่าวๆ) ========== */
-@media (max-width: 1200px){
-  .table .tHead, .table .tRow{
-    grid-template-columns: 100px 1.4fr 120px 1.6fr 120px 100px 120px;
+/* ลบสไตล์เก่าที่เคยชี้ typeCol/priceCol (ไม่ใช้แล้ว) */
+.table .tHead .typeCol,
+.table .tRow  .typeCol,
+.table .tHead .priceCol,
+.table .tRow  .priceCol{ padding:0; text-align:inherit; }
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 1280px){
+  .adminRooms .tHead, .adminRooms .tRow{
+    grid-template-columns: 160px 1.7fr 90px 1.2fr 130px 110px 150px;
   }
-  .table .tHead .priceCol,
-  .table .tRow  .priceCol{ padding-right:32px; }
-  .table .tHead .typeCol{ padding-left:18px; }
-  .table .tRow  .typeCol{ padding-left:14px; }
 }
-
-@media (max-width: 920px){
-  /* ซ่อนคอลัมน์รูปภาพเพื่อให้ตารางพอดี */
-  .table .tHead > :nth-last-child(1),
-  .table .tRow  > :nth-last-child(1){ display:none; }
-  .table .tHead, .table .tRow{
-    grid-template-columns: 100px 1.4fr 120px 1.6fr 120px 100px;
+@media (max-width: 1080px){
+  /* ซ่อนคอลัมน์รูปภาพให้พอดีจอ */
+  .adminRooms .tHead > :nth-last-child(1),
+  .adminRooms .tRow  > :nth-last-child(1){ display:none; }
+  .adminRooms .tHead, .adminRooms .tRow{
+    grid-template-columns: 160px 1.7fr 90px 1.3fr 130px 110px;
+  }
+}
+@media (max-width: 900px){
+  /* ซ่อน “ประเภท” เพิ่ม เพื่อให้อยู่ในบรรทัดเดียว */
+  .adminRooms .tHead > :nth-child(4),
+  .adminRooms .tRow  > :nth-child(4){ display:none; }
+  .adminRooms .tHead, .adminRooms .tRow{
+    grid-template-columns: 150px 1.8fr 90px 140px 110px;
   }
 }
 
 /* ========== MODAL ========== */
 .modalOverlay{
   position:fixed; inset:0; background:rgba(0,0,0,.35);
-  display:flex; align-items:center; justify-content:center;
-  z-index:2000;
+  display:flex; align-items:center; justify-content:center; z-index:2000;
 }
 .modalCard{
-  width:min(960px, 92vw);
-  max-height:86vh;
-  overflow:auto;
-  background:#fff; border-radius:16px;
-  box-shadow:0 20px 60px rgba(0,0,0,.25);
-  padding:22px;
+  width:min(960px, 92vw); max-height:86vh; overflow:auto;
+  background:#fff; border-radius:16px; box-shadow:0 20px 60px rgba(0,0,0,.25); padding:22px;
 }
 .modalTitle{ margin:0 0 14px; font-size:20px; font-weight:900; color:#2b2b2b; }
 
 /* layout ฟอร์มซ้าย + แกลเลอรีขวา */
-.modalGrid{
-  display:grid; grid-template-columns: 1.1fr 1fr; gap:24px;
-}
+.modalGrid{ display:grid; grid-template-columns: 1.1fr 1fr; gap:24px; }
 .modalForm .fRow{ margin-bottom:14px; }
 .modalForm .fRow.two{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
 .modalForm label{ display:block; font-weight:700; margin-bottom:6px; color:#444; }
@@ -131,16 +168,8 @@
   width:100%; border:1px solid var(--line); border-radius:10px; padding:10px 12px; background:#fff;
 }
 
-.facilityGrid{
-  display:grid; gap:8px; grid-template-columns:repeat(2, minmax(0, 1fr));
-}
-.chk{ display:flex; align-items:center; gap:8px; font-weight:600; color:#333; }
-.chk input{ width:16px; height:16px; }
-
 .modalGallery .gTitle{ font-weight:800; margin:8px 0 8px; color:#444; }
-.galleryGrid{
-  display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:10px;
-}
+.galleryGrid{ display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:10px; }
 .thumb{ position:relative; border:1px solid var(--line); border-radius:10px; overflow:hidden; }
 .thumb img{ width:100%; height:130px; object-fit:cover; display:block; }
 .thumbDel{
@@ -148,9 +177,7 @@
   border-radius:999px; border:1px solid #e5e5e5; background:#fff; cursor:pointer; font-weight:900;
 }
 
-.modalActions{
-  display:flex; justify-content:flex-end; gap:12px; margin-top:10px;
-}
+.modalActions{ display:flex; justify-content:flex-end; gap:12px; margin-top:10px; }
 .btnText{
   background:#fff; border:1px solid var(--line); border-radius:10px;
   padding:10px 14px; font-weight:800; cursor:pointer; color:#444;
@@ -161,4 +188,96 @@
 @media (max-width: 880px){
   .modalGrid{ grid-template-columns:1fr; }
   .galleryGrid{ grid-template-columns:repeat(2, minmax(0, 1fr)); }
+}
+
+/* ===== Dashboard empty pattern ===== */
+.adminEmpty { padding: 0; }
+.emptyBox{
+  padding:16px 18px; background:#fff; border:1px solid var(--line);
+  border-radius:12px; color:#6b6b6b; font-weight:700;
+}
+.emptyBox p{ margin:0; }
+.quickRow{ margin-top:10px; display:flex; gap:10px; }
+
+/* ======= ADMIN LOGIN ======= */
+.authWrap{
+  min-height:100vh;
+  display:flex; align-items:center; justify-content:center;
+  position:relative; background:#f5f7ef;
+  padding:24px;
+}
+.authBg{
+  position:absolute; inset:0; pointer-events:none;
+  background:
+    radial-gradient(1200px 600px at -10% -10%, rgba(123,145,79,.25), rgba(123,145,79,0) 60%),
+    radial-gradient(800px 500px at 110% 110%, rgba(167,191,118,.25), rgba(167,191,118,0) 60%);
+}
+.authCard{
+  position:relative; z-index:1;
+  width:min(480px, 92vw);
+  background:#fff; border:1px solid var(--line); border-radius:16px;
+  box-shadow:0 24px 64px rgba(0,0,0,.12);
+  padding:26px 22px 20px;
+}
+.authBrand{
+  display:flex; align-items:center; gap:12px; margin-bottom:6px;
+}
+.authBrand .logo{
+  width:42px; height:42px; border-radius:12px;
+  display:flex; align-items:center; justify-content:center;
+  background:#f0f4e4; color:#3c5537; font-weight:900;
+  border:1px solid #e2e9cf;
+}
+.authBrand .brandText{ line-height:1.05; }
+.authBrand .brandText strong{ font-size:16px; color:#253; }
+.authBrand .brandText small{ font-size:11px; color:#6b7; letter-spacing:.4px; }
+
+.authTitle{ margin:6px 0 2px; font-size:22px; font-weight:900; color:#222; }
+.authSub{ margin:0 0 14px; color:#667; }
+
+.authForm{ display:grid; gap:12px; }
+.field .label{ display:block; font-weight:700; color:#444; margin-bottom:6px; }
+
+.inputWrap{
+  display:grid; grid-template-columns:32px 1fr 36px; align-items:center;
+  border:1px solid var(--line); border-radius:12px; background:#fff;
+  transition: box-shadow .15s ease, border-color .15s ease;
+}
+.inputWrap:focus-within{
+  border-color:#cfe0a8; box-shadow:0 0 0 4px rgba(167,191,118,.25);
+}
+.inputWrap .ic{ width:32px; height:38px; display:flex; align-items:center; justify-content:center; color:#7a8; }
+.inputWrap .ic svg{ width:18px; height:18px; fill:currentColor; }
+.inputWrap input{
+  border:0; outline:0; background:transparent; height:38px; padding:0 10px;
+  font-size:14px; color:#222;
+}
+.eyeBtn{
+  width:36px; height:36px; border:0; background:transparent; cursor:pointer; color:#8a8;
+  display:flex; align-items:center; justify-content:center; border-left:1px solid #eee;
+}
+.eyeBtn:hover{ color:#556; }
+.eyeBtn svg{ width:18px; height:18px; fill:currentColor; }
+
+.authBtn{
+  margin-top:6px;
+  background:var(--accent-500); color:#fff; border:1px solid var(--accent-700);
+  padding:12px 14px; border-radius:12px; font-weight:900; cursor:pointer;
+}
+.authBtn:hover{ background:var(--accent-700); }
+.authBtn[disabled]{ opacity:.7; cursor:not-allowed; }
+
+.alert.error{
+  background:#ffe9e9; color:#8a1f1f;
+  border:1px solid #f2c7c7; border-radius:12px; padding:10px 12px; margin-bottom:8px;
+  font-weight:700;
+}
+.authFoot{
+  text-align:center; color:#789; font-size:12px; margin-top:12px;
+}
+
+/* mobile */
+@media (max-width:520px){
+  .authCard{ padding:22px 16px 16px; }
+  .authTitle{ font-size:20px; }
 }

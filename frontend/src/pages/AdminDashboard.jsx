@@ -1,18 +1,28 @@
-import { useNavigate } from "react-router-dom";
+// src/pages/AdminDashboard.jsx
+import { Link } from "react-router-dom";
 
 export default function AdminDashboard() {
-  const navigate = useNavigate();
-  function logout() {
-    localStorage.removeItem("admin_token");
-    navigate("/", { replace: true });
-  }
   return (
-    <div className="container" style={{ padding: "32px 16px" }}>
-      <h2>แดชบอร์ดผู้ดูแล</h2>
-      <p>ใส่เนื้อหา/เมนูบริหารจัดการต่าง ๆ ของคุณที่นี่</p>
-      <button onClick={logout} className="heroBtn" style={{ marginTop: 16 }}>
-        ออกจากระบบ
-      </button>
+    <div className="adminPage">
+      <div className="adminPageHeader">
+        <h2>
+          <span className="headIcon"><DashboardIcon /></span> Dashboard
+        </h2>
+      </div>
+
+      <div className="card adminEmpty">
+        <div className="emptyBox">
+          <p>ใส่สรุป/สถิติ, การ์ดชี้วัด หรือกราฟต่าง ๆ ของระบบไว้ที่นี่</p>
+        </div>
+      </div>
     </div>
+  );
+}
+
+function DashboardIcon() {
+  return (
+    <svg viewBox="0 0 24 24">
+      <path d="M3 13h8V3H3v10Zm0 8h8v-6H3v6Zm10 0h8V11h-8v10Zm0-18v6h8V3h-8Z"/>
+    </svg>
   );
 }

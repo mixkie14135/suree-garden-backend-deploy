@@ -1,7 +1,7 @@
 const prisma = require('../../../config/prisma');
+const policy = require('../../../config/reservationPolicy');
 
 // ลูกค้าอัปสลิป (public)
-// Body: { reservation_code, amount, method? = 'bank_transfer', slip_url }
 exports.uploadSlipBanquet = async (req, res) => {
   try {
     const { reservation_code, amount, method = 'bank_transfer' } = req.body;
@@ -29,18 +29,29 @@ exports.uploadSlipBanquet = async (req, res) => {
       return res.status(400).json({ message: 'Reservation is not eligible for payment' });
     }
 
-    const pay = await prisma.payment_banquet.create({
-      data: {
-        reservation_id: r.reservation_id,
-        method,
-        amount: String(amount),
-        payment_status: 'pending',
-        slip_url: slipUrl
-      },
-      select: { payment_id: true, payment_status: true, slip_url: true }
+    const newExpire = new Date(Date.now() + policy.pendingWithSlipExpireMinutes * 60 * 1000);
+
+    const result = await prisma.$transaction(async (tx) => {
+      const pay = await tx.payment_banquet.create({
+        data: {
+          reservation_id: r.reservation_id,
+          method,
+          amount: String(amount),
+          payment_status: 'pending',
+          slip_url: slipUrl
+        },
+        select: { payment_id: true, payment_status: true, slip_url: true }
+      });
+
+      await tx.reservation_banquet.update({
+        where: { reservation_id: r.reservation_id },
+        data: { expires_at: newExpire }
+      });
+
+      return pay;
     });
 
-    res.status(201).json({ status: 'ok', message: 'Slip uploaded (pending)', data: pay });
+    res.status(201).json({ status: 'ok', message: `Slip uploaded (pending). Hold +${policy.pendingWithSlipExpireMinutes}m`, data: result });
   } catch (e) {
     if (e instanceof Error && e.message && /Invalid file type|File too large/i.test(e.message)) {
       return res.status(400).json({ message: e.message });
@@ -61,9 +72,14 @@ exports.approveBanquetPayment = async (req, res) => {
         select: { payment_id: true, reservation_id: true }
       });
 
+      await tx.payment_banquet.updateMany({
+        where: { reservation_id: p.reservation_id, payment_id: { not: p.payment_id }, payment_status: 'pending' },
+        data: { payment_status: 'rejected' }
+      });
+
       await tx.reservation_banquet.update({
         where: { reservation_id: p.reservation_id },
-        data: { status: 'confirmed' }
+        data: { status: 'confirmed', expires_at: null }
       });
 
       return p;
@@ -82,13 +98,22 @@ exports.approveBanquetPayment = async (req, res) => {
 exports.rejectBanquetPayment = async (req, res) => {
   try {
     const id = Number(req.params.id);
-    const p = await prisma.payment_banquet.update({
-      where: { payment_id: id },
-      data: { payment_status: 'rejected' },
-      select: { payment_id: true, payment_status: true }
+    const p = await prisma.$transaction(async (tx) => {
+      const pay = await tx.payment_banquet.update({
+        where: { payment_id: id },
+        data: { payment_status: 'rejected' },
+        select: { payment_id: true, reservation_id: true }
+      });
+
+      await tx.reservation_banquet.update({
+        where: { reservation_id: pay.reservation_id },
+        data: { status: 'cancelled' }
+      });
+
+      return pay;
     });
 
-    res.json({ status: 'ok', message: 'Payment rejected', data: p });
+    res.json({ status: 'ok', message: 'Payment rejected, reservation cancelled', data: p });
   } catch (e) {
     if (e.code === 'P2025') {
       return res.status(404).json({ message: 'Payment not found' });

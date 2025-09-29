@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import logo from "../assets/logo.jpg"; // ใช้อะไรก็ได้ในโปรเจคคุณ
+import logo from "../assets/logo.jpg"; 
 
 const MenuItem = ({ to, icon, children, end }) => (
   <NavLink
@@ -52,7 +52,7 @@ export default function AdminLayout() {
   );
 }
 
-/* ====== ไอคอน SVG ====== */
+
 function DashboardIcon() {
   return (
     <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10Zm10 8h8V3h-8v18ZM3 21h8v-6H3v6Z"/></svg>

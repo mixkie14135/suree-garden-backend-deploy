@@ -1,112 +1,181 @@
+// src/pages/AdminLogin.jsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-
-// ใช้ .env ถ้ามี; ถ้าไม่ตั้ง จะ fallback เป็น "" (กรณีเสิร์ฟโดเมนเดียวกันผ่าน reverse proxy)
-const API_BASE = import.meta.env.VITE_API_BASE ?? "";
+import { apiPost } from "../lib/api.js";
 
 export default function AdminLogin() {
   const navigate = useNavigate();
+
   const [form, setForm] = useState({ username: "", password: "" });
-  const [error, setError] = useState("");
+  const [showPwd, setShowPwd] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState("");
 
   const onChange = (e) =>
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
 
+  // ดึงข้อความ error ให้สะอาด: รองรับทั้ง string, JSON string, object
+  function prettyError(e) {
+    if (!e) return "บัญชีเข้าสู่ระบบไม่ถูกต้อง";
+    // ถ้าเป็น object ที่มี message
+    if (typeof e === "object" && e.message) {
+      try {
+        const j = JSON.parse(e.message);
+        return j?.message || e.message || "บัญชีเข้าสู่ระบบไม่ถูกต้อง";
+      } catch {
+        return e.message || "บัญชีเข้าสู่ระบบไม่ถูกต้อง";
+      }
+    }
+    // ถ้าเป็น string ตรง ๆ
+    if (typeof e === "string") {
+      try {
+        const j = JSON.parse(e);
+        return j?.message || e || "บัญชีเข้าสู่ระบบไม่ถูกต้อง";
+      } catch {
+        return e || "บัญชีเข้าสู่ระบบไม่ถูกต้อง";
+      }
+    }
+    return "บัญชีเข้าสู่ระบบไม่ถูกต้อง";
+  }
+
   async function onSubmit(e) {
     e.preventDefault();
-    setError("");
-    setLoading(true);
+    setErr("");
+
+    if (!form.username.trim() || !form.password.trim()) {
+      return setErr("กรุณากรอกข้อมูลให้ครบ");
+    }
 
     try {
-      const res = await fetch(`${API_BASE}/api/admin/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include", // รองรับทั้ง cookie-mode และ bearer-mode
-        body: JSON.stringify({
-          username: form.username,
-          password: form.password,
-        }),
+      setLoading(true);
+      // backend รับ username + password
+      const res = await apiPost("/admin/login", {
+        username: form.username.trim(),
+        password: form.password,
       });
 
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error(data?.message || "เข้าสู่ระบบไม่สำเร็จ");
+      // ถ้า backend ใช้ httpOnly cookie จะไม่มี token ส่งมา
+      if (res?.token) {
+        localStorage.setItem("admin_token", res.token);
       }
-
-      // กรณี backend ส่ง token (เมื่อ AUTH_COOKIE !== 'true')
-      if (data?.token) {
-        localStorage.setItem("admin_token", data.token);
-      } else {
-        // cookie-mode
-        localStorage.removeItem("admin_token");
-      }
-
-      // ยืนยันสิทธิ์ด้วย /me
-      const token = localStorage.getItem("admin_token");
-      const meRes = await fetch(`${API_BASE}/api/admin/me`, {
-        method: "GET",
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-        credentials: "include",
-      });
-
-      if (!meRes.ok) {
-        localStorage.removeItem("admin_token");
-        const meErr = await meRes.json().catch(() => ({}));
-        throw new Error(meErr?.message || "ไม่สามารถดึงข้อมูลผู้ดูแลได้");
-      }
-
       navigate("/admin", { replace: true });
-    } catch (err) {
-      setError(err.message || "เกิดข้อผิดพลาด");
+    } catch (e) {
+      setErr(prettyError(e));
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="container" style={{ maxWidth: 420, padding: "64px 16px" }}>
-      <h2 style={{ marginBottom: 12 }}>เข้าสู่ระบบผู้ดูแล</h2>
-      <p style={{ color: "#666", marginBottom: 24 }}>
-        ใส่ชื่อผู้ใช้และรหัสผ่านสำหรับผู้ดูแลระบบ
-      </p>
+    <div className="authWrap">
+      {/* background ตกแต่ง */}
+      <div className="authBg" aria-hidden />
 
-      <form onSubmit={onSubmit} className="card">
-        <div style={{ marginBottom: 12 }}>
-          <label>ชื่อผู้ใช้</label>
-          <input
-            name="username"
-            type="text"
-            placeholder="admin"
-            value={form.username}
-            onChange={onChange}
-            className="input"
-            required
-            autoComplete="username"
-          />
-        </div>
-        <div style={{ marginBottom: 16 }}>
-          <label>รหัสผ่าน</label>
-          <input
-            name="password"
-            type="password"
-            placeholder="••••••"
-            value={form.password}
-            onChange={onChange}
-            className="input"
-            required
-            autoComplete="current-password"
-          />
+      <div className="authCard">
+        <div className="authBrand">
+          <div className="logo">
+            <span>SG</span>
+          </div>
+          <div className="brandText">
+            <strong>Suree Garden</strong>
+            <small>RESORT — Admin</small>
+          </div>
         </div>
 
-        {error && (
-          <div style={{ color: "#b00020", marginBottom: 12 }}>{error}</div>
-        )}
+        <h1 className="authTitle">เข้าสู่ระบบผู้ดูแล</h1>
+        <p className="authSub">
+          ใส่ <b>username</b> และ <b>password</b> สำหรับผู้ดูแลระบบ
+        </p>
 
-        <button type="submit" className="heroBtn" style={{ width: "100%" }} disabled={loading}>
-          {loading ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}
-        </button>
-      </form>
+        {err && <div className="alert error">{err}</div>}
+
+        <form onSubmit={onSubmit} className="authForm">
+          <label className="field">
+            <span className="label">Username</span>
+            <div className="inputWrap">
+              <span className="ic" aria-hidden>
+                <UserIcon />
+              </span>
+              <input
+                name="username"
+                type="text"
+                placeholder="admin"
+                value={form.username}
+                onChange={onChange}
+                autoComplete="username"
+                required
+                disabled={loading}
+              />
+            </div>
+          </label>
+
+          <label className="field">
+            <span className="label">Password</span>
+            <div className="inputWrap">
+              <span className="ic" aria-hidden>
+                <LockIcon />
+              </span>
+              <input
+                name="password"
+                type={showPwd ? "text" : "password"}
+                placeholder="••••••••"
+                value={form.password}
+                onChange={onChange}
+                autoComplete="current-password"
+                required
+                disabled={loading}
+              />
+              <button
+                type="button"
+                className="eyeBtn"
+                onClick={() => setShowPwd((v) => !v)}
+                aria-label={showPwd ? "ซ่อนรหัสผ่าน" : "แสดงรหัสผ่าน"}
+                disabled={loading}
+              >
+                {showPwd ? <EyeOffIcon /> : <EyeIcon />}
+              </button>
+            </div>
+          </label>
+
+          <button className="authBtn" type="submit" disabled={loading}>
+            {loading ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}
+          </button>
+        </form>
+
+        <p className="authFoot">
+          ระบบสำหรับเจ้าหน้าที่เท่านั้น หากลืมรหัสผ่านให้ติดต่อผู้ดูแลระบบ
+        </p>
+      </div>
     </div>
+  );
+}
+
+/* ===== inline icons ===== */
+function UserIcon() {
+  return (
+    <svg viewBox="0 0 24 24">
+      <path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm0 2c-4.33 0-8 2.17-8 5v1h16v-1c0-2.83-3.67-5-8-5Z" />
+    </svg>
+  );
+}
+function LockIcon() {
+  return (
+    <svg viewBox="0 0 24 24">
+      <path d="M17 8h-1V6a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2Zm-6 8v-2a1 1 0 0 1 2 0v2a1 1 0 0 1-2 0ZM9 8V6a3 3 0 0 1 6 0v2Z" />
+    </svg>
+  );
+}
+function EyeIcon() {
+  return (
+    <svg viewBox="0 0 24 24">
+      <path d="M12 5c5.52 0 9.7 3.84 11 7-1.3 3.16-5.48 7-11 7S2.3 15.16 1 12c1.3-3.16 5.48-7 11-7Zm0 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Z" />
+    </svg>
+  );
+}
+function EyeOffIcon() {
+  return (
+    <svg viewBox="0 0 24 24">
+      <path d="m2 4 2-2 18 18-2 2-3.02-3.02A12.4 12.4 0 0 1 12 19C6.48 19 2.3 15.16 1 12a13.9 13.9 0 0 1 6.48-6.28L2 4Zm8.3 4.3L9 7a5 5 0 0 0 7 7l-1.3-1.3A3 3 0 0 1 10.3 8.3Z" />
+    </svg>
   );
 }

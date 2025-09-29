@@ -1,5 +1,5 @@
 import React from 'react'
-import hero from '../assets/hero.jpg' // ใส่รูปฮีโร่ของคุณ
+import hero from '../assets/hero.jpg' 
 
 export default function Hero(){
   return (

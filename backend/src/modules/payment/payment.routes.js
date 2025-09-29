@@ -1,36 +1,33 @@
 const express = require('express');
 const router = express.Router();
 
-// ปรับพาธตามโปรเจกต์จริงของคุณ
 const { requireAdminAuth } = require('../../middlewares/authAdmin');
-
-// Multer middleware
 const { uploadSlip } = require('../../middlewares/uploadSlip');
+const { publicRateLimit } = require('../../middlewares/ratelimit'); // <<< เพิ่ม
 
 const roomCtrl = require('./room/paymentRoom.controller');
 const banquetCtrl = require('./banquet/paymentBanquet.controller');
 
+// (debug ชั่วคราว ถ้าอยากดูค่า ให้ log หลัง require ทั้งหมดเท่านั้น)
+console.log('[payment.routes] typeof uploadSlip =', typeof uploadSlip);
+console.log('[payment.routes] roomCtrl keys =', Object.keys(roomCtrl || {}));
+console.log('[payment.routes] banquetCtrl keys =', Object.keys(banquetCtrl || {}));
+
 // ===== ROOM =====
-// ลูกค้าอัปสลิป
-router.post('/room/upload-slip', uploadSlip.single('slip'), roomCtrl.uploadSlipRoom);
+router.post('/room/upload-slip', publicRateLimit, uploadSlip.single('slip'), roomCtrl.uploadSlipRoom); // <<< ครอบ limiter
 
-// ===== Admin reads (ROOM) =====
 router.get('/room/:id', requireAdminAuth, roomCtrl.getRoomPaymentById);
-router.get('/room',     requireAdminAuth, roomCtrl.listRoomPayments); // ?reservation_id=123 (ทางเลือก)
+router.get('/room',     requireAdminAuth, roomCtrl.listRoomPayments);
 
-// แอดมินอนุมัติ/ปฏิเสธ
 router.post('/room/:id/approve', requireAdminAuth, roomCtrl.approveRoomPayment);
 router.post('/room/:id/reject',  requireAdminAuth, roomCtrl.rejectRoomPayment);
 
 // ===== BANQUET =====
-// ลูกค้าอัปสลิป
-router.post('/banquet/upload-slip', uploadSlip.single('slip'), banquetCtrl.uploadSlipBanquet);
+router.post('/banquet/upload-slip', publicRateLimit, uploadSlip.single('slip'), banquetCtrl.uploadSlipBanquet); // <<< ครอบ limiter
 
-// ===== Admin reads (BANQUET) =====
 router.get('/banquet/:id', requireAdminAuth, banquetCtrl.getBanquetPaymentById);
-router.get('/banquet',     requireAdminAuth, banquetCtrl.listBanquetPayments); // ?reservation_id=123 (ทางเลือก)
+router.get('/banquet',     requireAdminAuth, banquetCtrl.listBanquetPayments);
 
-// แอดมินอนุมัติ/ปฏิเสธ
 router.post('/banquet/:id/approve', requireAdminAuth, banquetCtrl.approveBanquetPayment);
 router.post('/banquet/:id/reject',  requireAdminAuth, banquetCtrl.rejectBanquetPayment);
 

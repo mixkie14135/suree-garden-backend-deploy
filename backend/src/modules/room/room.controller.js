@@ -1,15 +1,9 @@
 const prisma = require('../../config/prisma.js');
+const policy = require('../../config/reservationPolicy');
 
 /**
  * GET /api/rooms
- * Query:
- *  page=1&limit=10
- *  status=available|occupied|maintenance
- *  typeId=1
- *  minPrice=1000&maxPrice=3000
- *  capacityGte=2
- *  search=101 (ค้นหา room_number / description)
- *  include=type,images  (คั่นด้วย comma)
+ * ...
  */
 exports.getRooms = async (req, res) => {
   try {
@@ -21,11 +15,10 @@ exports.getRooms = async (req, res) => {
 
     const where = {};
 
-    if (status) where.status = status; // room_status enum (available/occupied/maintenance)
+    if (status) where.status = status;
     if (typeId) where.room_type_id = Number(typeId);
     if (capacityGte) where.capacity = { gte: Number(capacityGte) };
 
-    // Prisma Decimal: ใส่เป็น number/string ได้
     if (minPrice || maxPrice) {
       where.price = {};
       if (minPrice) where.price.gte = String(minPrice);
@@ -92,14 +85,6 @@ exports.getRoom = async (req, res) => {
 
 /**
  * POST /api/rooms
- * Body: {
- *  room_number (required, unique),
- *  room_type_id (required),
- *  capacity (required),
- *  price (required Decimal),
- *  status (available|occupied|maintenance),
- *  description?
- * }
  */
 exports.createRoom = async (req, res) => {
   try {
@@ -117,7 +102,7 @@ exports.createRoom = async (req, res) => {
       price: String(price),
       description,
     };
-    if (status) data.status = status; // ถ้าไม่ส่งจะ default(available)
+    if (status) data.status = status;
 
     const created = await prisma.room.create({ data });
     res.status(201).json({ status: 'ok', data: created });
@@ -131,7 +116,6 @@ exports.createRoom = async (req, res) => {
 
 /**
  * PUT /api/rooms/:id
- * Body: field ไหนส่งมาก็อัปเดตอันนั้น
  */
 exports.updateRoom = async (req, res) => {
   try {
@@ -168,7 +152,6 @@ exports.updateRoom = async (req, res) => {
 
 /**
  * DELETE /api/rooms/:id
- * หมายเหตุ: ในโปรดักชันแนะนำทำ soft-delete แทน (เพิ่ม is_active)
  */
 exports.deleteRoom = async (req, res) => {
   try {
@@ -185,7 +168,6 @@ exports.deleteRoom = async (req, res) => {
 
 /**
  * GET /api/room-types
- * list room_type ทั้งหมด
  */
 exports.getRoomTypes = async (_req, res) => {
   try {
@@ -200,18 +182,6 @@ exports.getRoomTypes = async (_req, res) => {
 
 /**
  * GET /api/rooms/available
- * หา “ห้องว่าง” ตามช่วงวันที่
- * Query:
- *  checkin=2025-08-20
- *  checkout=2025-08-22
- *  capacityGte=2
- *  typeId=1
- *  page=1&limit=10
- *  include=type,images
- *
- * เงื่อนไข “ว่าง” = ไม่มี reservation_room ที่สถานะ (pending|confirmed|checked_in)
- * และมีการ “ซ้อนทับช่วงวัน” กับช่วงที่ลูกค้าต้องการ
- * (สูตร overlap: existing.checkin < wanted.checkout && existing.checkout > wanted.checkin)
  */
 exports.getAvailableRooms = async (req, res) => {
   try {
@@ -237,23 +207,19 @@ exports.getAvailableRooms = async (req, res) => {
     if (inc.includes('images')) includeObj.room_image = true;
 
     const AND = [];
-    
-    // ฟิลเตอร์ความจุ/ประเภท
     if (capacityGte) AND.push({ capacity: { gte: Number(capacityGte) } });
     if (typeId) AND.push({ room_type_id: Number(typeId) });
 
-    // อาจกรองสถานะห้องให้ไม่เท่ากับ maintenance/occupied (ขึ้นกับบิสิเนสลอจิก)
     AND.push({ status: 'available' });
 
-    // ไม่ให้มี booking ซ้อนทับ
     AND.push({
       NOT: {
         reservation_room: {
           some: {
-            status: { in: ['pending', 'confirmed', 'checked_in'] },
+            status: { in: policy.room.blockStatuses }, // <<< ใช้ policy
             AND: [
-              { checkin_date:  { lt: wantedCheckout } }, // existing.checkin < wanted.checkout
-              { checkout_date: { gt: wantedCheckin } },  // existing.checkout > wanted.checkin
+              { checkin_date:  { lt: wantedCheckout } },
+              { checkout_date: { gt: wantedCheckin } },
             ],
           },
         },
@@ -285,22 +251,9 @@ exports.getAvailableRooms = async (req, res) => {
   }
 };
 
-// สร้าง room_type ** วันทีเริ่มทำ 
-exports.createRoomType = async (req, res) => {
-  try {
-    const { type_name, description } = req.body;
-    if (!type_name) return res.status(400).json({ message: 'type_name is required' });
-
-    const created = await prisma.room_type.create({
-      data: { type_name, description }
-    });
-
-    res.status(201).json({ status: 'ok', data: created });
-  } catch (err) {
-    res.status(500).json({ status: 'error', message: err.message });
-  }
-};
-
+/**
+ * GET /api/rooms/:id/availability?checkin=YYYY-MM-DD&checkout=YYYY-MM-DD
+ */
 exports.getRoomAvailability = async (req, res) => {
   try {
     const roomId = Number(req.params.id);
@@ -316,19 +269,15 @@ exports.getRoomAvailability = async (req, res) => {
       return res.status(400).json({ message: 'invalid date range' });
     }
 
-    // ปรับชุดสถานะตามระบบจริงของคุณ: กันห้องช่วง "จองสำเร็จ/ชำระแล้ว/กำลังรอจ่าย (ถ้าต้องการ)"
-    const BLOCKING_STATUSES = ['CONFIRMED', 'PAID']; // ใส่ 'PENDING_PAYMENT' ถ้าจะกั้นช่วงรอจ่าย
-
-    // เงื่อนไขทับซ้อนมาตรฐาน: (existing.checkin < requested.checkout) && (existing.checkout > requested.checkin)
     const overlap = await prisma.reservation_room.findFirst({
-    where: {
-      room_id: roomId,
-      checkin_date:  { lt: outDate },
-      checkout_date: { gt: inDate }
-    },
-    select: { reservation_id: true }
+      where: {
+        room_id: roomId,
+        status: { in: policy.room.blockStatuses }, // <<< ใช้ policy
+        checkin_date:  { lt: outDate },
+        checkout_date: { gt: inDate }
+      },
+      select: { reservation_id: true }
     });
-
 
     return res.json({
       room_id: roomId,
@@ -341,3 +290,19 @@ exports.getRoomAvailability = async (req, res) => {
   }
 };
 
+
+
+exports.createRoomType = async (req, res) => {
+  try {
+    const { type_name, description } = req.body;
+    if (!type_name) return res.status(400).json({ message: 'type_name is required' });
+
+    const created = await prisma.room_type.create({
+      data: { type_name, description }
+    });
+
+    res.status(201).json({ status: 'ok', data: created });
+  } catch (err) {
+    res.status(500).json({ status: 'error', message: err.message });
+  }
+};

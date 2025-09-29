@@ -24,6 +24,7 @@ const roomImageRoutes = require('./modules/room/image/roomImage.routes');
 const banquetImageRoutes = require('./modules/banquet/image/banquetImage.routes');
 
 const paymentRoutes = require('./modules/payment/payment.routes');
+const { publicRateLimit } = require("./middlewares/ratelimit");
 
 const app = express();
 const port = process.env.PORT || 8800;
@@ -42,6 +43,12 @@ app.get('/api/ping', (_req, res) => res.json({ message: 'API is working!' }));
 
 app.use('/uploads', express.static(UPLOAD_ROOT));
 
+/* ⬇️ ใส่ rate limit เฉพาะเส้น public ที่เสี่ยง spam — ต้องอยู่ก่อนผูก routes */
+app.use('/api/reservations', publicRateLimit);                 // สร้างการจอง (public)
+app.use('/api/payments', publicRateLimit);                     // อัปสลิป (public)
+app.use('/api/reservations/rooms/status', publicRateLimit);    // เช็คสถานะด้วยโค้ด (public)
+app.use('/api/reservations/banquets/status', publicRateLimit); // เช็คสถานะด้วยโค้ด (public)
+
 app.use('/api', adminRoutes);
 app.use('/api', roomRoutes);
 app.use('/api', banquetRoutes);
@@ -53,6 +60,7 @@ app.use('/api', roomImageRoutes);
 app.use('/api', banquetImageRoutes);
 
 app.use('/api', paymentRoutes);
+
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);

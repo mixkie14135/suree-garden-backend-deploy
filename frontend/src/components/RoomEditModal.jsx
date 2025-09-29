@@ -14,8 +14,8 @@ const AMENITIES = [
 
 export default function RoomEditModal({ open, room, onClose, onSave }){
   const [form, setForm] = useState(null);
-  const [newFiles, setNewFiles] = useState([]);        // File[]
-  const [removeImages, setRemoveImages] = useState([]); // url[] ของรูปเดิมที่ user กดลบ
+  const [newFiles, setNewFiles] = useState([]);        
+  const [removeImages, setRemoveImages] = useState([]); 
   const fileRef = useRef();
 
   useEffect(() => {
@@ -29,7 +29,7 @@ export default function RoomEditModal({ open, room, onClose, onSave }){
       price: room.price ?? 0,
       status: room.status ?? "free",
       amenities: room.amenities ? [...room.amenities] : [],
-      images: room.images ? [...room.images] : [],   // เก็บ url ของรูป “เดิม”
+      images: room.images ? [...room.images] : [],   
     });
     setNewFiles([]);
     setRemoveImages([]);
@@ -72,7 +72,7 @@ export default function RoomEditModal({ open, room, onClose, onSave }){
   const submit = async () => {
     if (!form) return;
 
-    // เตรียม FormData ต่อ API จริงได้ทันที
+    
     const fd = new FormData();
     fd.append("payload", JSON.stringify({
       id: form.id,
@@ -83,16 +83,15 @@ export default function RoomEditModal({ open, room, onClose, onSave }){
       price: Number(form.price)||0,
       status: form.status,
       amenities: form.amenities,
-      keepImages: form.images,      // url รูปที่ยังเก็บไว้
+      keepImages: form.images,      
     }));
     newFiles.forEach(f => fd.append("images[]", f));
     if (removeImages.length) fd.append("removeImages", JSON.stringify(removeImages));
 
-    // TODO: fetch('/api/admin/rooms/'+form.id, {method:'PUT', body: fd})
-    // mock update (ทันที)
+    
     const updated = {
       ...form,
-      // รวมรูปเดิม(ที่ยังเหลือ) + รูปใหม่ (แปลง url blob เพื่อแสดงชั่วคราว)
+      
       images: [
         ...form.images,
         ...previews.map(p => p.url)

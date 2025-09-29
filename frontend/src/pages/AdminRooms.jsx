@@ -1,347 +1,327 @@
 // src/pages/AdminRooms.jsx
 import { useEffect, useMemo, useState } from "react";
+import { apiGet, apiPost, apiPut, apiDelete } from "../lib/api.js";
 import roomA from "../assets/room.jpg";
-import pond from "../assets/pond.jpg";
-import veranda from "../assets/veranda.jpg";
 
-const seedRooms = [
-  { id: 0, number: "0", detail: "เตียงใหญ่ + เตียงเล็ก", capacity: 3, type: "Deluxe Triple", price: 650, status: "vacant", images: [pond] },
-  { id: 1, number: "1", detail: "เตียงเดี่ยว 1 เตียง",     capacity: 2, type: "Deluxe Double",     price: 550, status: "vacant", images: [veranda] },
-  { id: 2, number: "2", detail: "เตียงเล็ก 2 เตียง",        capacity: 2, type: "Deluxe Twin",       price: 550, status: "occupied", images: [roomA] },
-  { id: 3, number: "3", detail: "เตียงเดี่ยว 1 เตียง",     capacity: 2, type: "Deluxe Double",     price: 550, status: "vacant", images: [roomA] },
-  { id: 4, number: "4", detail: "เตียงเดี่ยว 1 เตียง",     capacity: 2, type: "Deluxe Double",     price: 550, status: "vacant", images: [veranda] },
-];
+/** map สถานะระหว่าง UI ↔︎ Backend */
+const STATUS_UI_TO_API = { vacant: "available", occupied: "occupied" };
+const STATUS_API_TO_UI = { available: "vacant", occupied: "occupied", maintenance: "occupied" };
 
-const FACILITY_LIST = [
-  { key: "bed",       label: "เตียงใหญ่" },
-  { key: "electric",  label: "ไฟฟ้า" },
-  { key: "shelf",     label: "ชั้นวางของ" },
-  { key: "tv",        label: "ทีวี" },
-  { key: "fridge",    label: "ตู้เย็น" },
-  { key: "bathroom",  label: "ห้องน้ำส่วนตัว" },
-  { key: "air",       label: "แอร์" },
-  { key: "waterHeat", label: "เครื่องทำน้ำอุ่น" },
-  { key: "wardrobe",  label: "ตู้เสื้อผ้า" },
-];
-
-const ROOM_TYPES = [
-  "Deluxe Double",
-  "Premier Double Room",
-  "Deluxe Twin",
-  "Superior Double Room",
-  "Deluxe Triple",
-  "Family Suite",
-  "Standard Villa",
-];
-
-/* ===== helper: แปลงไฟล์ -> data URL เพื่อเก็บถาวร ===== */
-const fileToDataURL = (file) =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (e) => resolve(e.target.result);   // data URL string
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
+/** แปลง room จาก backend ให้เป็น shape ที่หน้า UI ใช้ง่าย */
+function toViewRoom(row) {
+  return {
+    id: row.room_id,
+    number: row.room_number,
+    typeId: row.room_type_id ?? "",
+    type: row.room_type?.type_name || "",
+    capacity: row.capacity ?? 0,
+    price: Number(row.price ?? 0),
+    status: STATUS_API_TO_UI[row.status] || "vacant",
+    detail: row.description || "",
+    images: Array.isArray(row.room_image)
+      ? row.room_image.map((i) => i?.image_url || i?.url).filter(Boolean)
+      : [],
+  };
+}
 
 export default function AdminRooms() {
-  const [rooms, setRooms] = useState(seedRooms);
-  const [filter, setFilter] = useState("all");
+  const [rooms, setRooms] = useState([]);
+  const [types, setTypes] = useState([]);           // [{room_type_id, type_name, ...}]
+  const [filter, setFilter] = useState("all");      // all | vacant | occupied
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  // ===== modal state =====
-  const [editing, setEditing] = useState(null); // object ของห้องที่กำลังแก้ไข
-  const [form, setForm] = useState(emptyForm());
-  const [previews, setPreviews] = useState([]); // ไฟล์ใหม่ที่เพิ่งเลือก: [{file, url}]
+  // modal/edit/create
+  const [editing, setEditing] = useState(false);    // true = เปิดโมดัล
+  const [form, setForm] = useState(emptyForm());    // ใช้ฟอร์มเดียวกัน เพิ่ม/แก้ไข
 
   useEffect(() => {
-    // TODO: โหลดจาก API จริง
-    // fetch('/api/rooms').then(r => r.json()).then(setRooms);
+    (async () => {
+      try {
+        setLoading(true);
+        setError("");
+
+        const tps = await apiGet("/room-types");
+        setTypes(tps || []);
+
+        await refreshRooms();
+      } catch (err) {
+        setError(String(err?.message || err));
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, []);
 
-  // กรองรายการ
+  /** กรองตามสถานะ UI */
   const view = useMemo(() => {
     if (filter === "all") return rooms;
-    return rooms.filter(r =>
+    return rooms.filter((r) =>
       filter === "vacant" ? r.status === "vacant" : r.status !== "vacant"
     );
   }, [rooms, filter]);
 
-  // เปิด modal + เติม form
-  const openEdit = (room) => {
-    setEditing(room);
-    setForm({
-      id: room.id,
-      number: room.number,
-      detail: room.detail,
-      capacity: String(room.capacity),
-      type: room.type,
-      price: String(room.price),
-      status: room.status,
-      facilities: room.facilities || {},
-      images: room.images || [],        // รูปเดิม
-    });
-    setPreviews([]);                    // เคลียร์รูปใหม่
-  };
-
-  const closeModal = () => {
-    setEditing(null);
-    // revoke url ของพรีวิวก่อนปิด
-    setPreviews(prev => {
-      prev.forEach(p => { try { URL.revokeObjectURL(p.url); } catch {} });
-      return [];
-    });
-  };
-
-  // ปิดสกรอลพื้นหลังตอนเปิด modal + esc เพื่อปิด
-  useEffect(() => {
-    if (!editing) return;
-    document.body.style.overflow = "hidden";
-    const onKey = (e) => { if (e.key === "Escape") closeModal(); };
-    window.addEventListener("keydown", onKey);
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
-    };
-  }, [editing]);
-
-  // เพิ่มห้อง (เดโม่)
-  const onAdd = () => {
-    const newRoom = {
-      id: Date.now(),
-      number: String(rooms.length),
-      detail: "เตียงเดี่ยว 1 เตียง",
-      capacity: 2,
-      type: "ดีลักซ์เตียงใหญ่",
-      price: 550,
-      status: "vacant",
-      images: [roomA],
-    };
-    setRooms(prev => [newRoom, ...prev]);
-  };
-
-  // ลบห้อง
-  const onDelete = (id) => {
-    if (!confirm("ลบห้องนี้?")) return;
-    setRooms(prev => prev.filter(r => r.id !== id));
-  };
-
-  // ===== form utils =====
   function emptyForm() {
     return {
       id: null,
       number: "",
+      typeId: "",
       detail: "",
       capacity: "2",
-      type: "",
       price: "0",
       status: "vacant",
-      facilities: {},
-      images: [], // รูปเดิม
+      images: [],
     };
   }
 
-  const setField = (name, value) => setForm(f => ({ ...f, [name]: value }));
+  const setField = (name, value) => setForm((f) => ({ ...f, [name]: value }));
 
-  const toggleFacility = (key) =>
-    setForm(f => ({ ...f, facilities: { ...f.facilities, [key]: !f?.facilities?.[key] } }));
+  /** เปิดโมดัล “เพิ่มห้อง” */
+  function openCreate() {
+    setForm(emptyForm());
+    setEditing(true);
+  }
 
-  // เลือกไฟล์หลายไฟล์ (รูปใหม่)
-  const onPickFiles = (e) => {
-    const files = Array.from(e.target.files || []);
-    const urls = files.map(f => ({ file: f, url: URL.createObjectURL(f) }));
-    setPreviews(prev => [...prev, ...urls]);
-  };
-
-  // ลบ "รูปใหม่ (พรีวิว)"
-  const removePreview = (idx) => {
-    setPreviews(prev => {
-      const arr = [...prev];
-      try { URL.revokeObjectURL(arr[idx]?.url); } catch {}
-      arr.splice(idx, 1);
-      return arr;
+  /** เปิดโมดัล “แก้ไขห้อง” */
+  function openEdit(room) {
+    setForm({
+      id: room.id,
+      number: room.number,
+      typeId: room.typeId || "",
+      detail: room.detail || "",
+      capacity: String(room.capacity ?? "2"),
+      price: String(room.price ?? "0"),
+      status: room.status || "vacant",
+      images: room.images || [],
     });
+    setEditing(true);
+  }
+
+  function closeModal() {
+    setEditing(false);
+    setForm(emptyForm());
+  }
+
+  async function refreshRooms() {
+    const rs = await apiGet("/rooms", { include: "type,images", limit: 200 });
+    setRooms((rs?.items || []).map(toViewRoom));
+  }
+
+  /** ลบห้อง */
+  const onDelete = async (id) => {
+    if (!confirm("ลบห้องนี้?")) return;
+    try {
+      setLoading(true);
+      setError("");
+      await apiDelete(`/rooms/${id}`);
+      setRooms((prev) => prev.filter((r) => r.id !== id));
+    } catch (e) {
+      setError(String(e.message || e));
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // ลบ "รูปเดิม"
-  const removeOldImage = (idx) => {
-    setForm(f => {
-      const imgs = (f.images || []).filter((_, i) => i !== idx);
-      return { ...f, images: imgs };
-    });
-  };
-
-  // บันทึก (แปลงไฟล์พรีวิวเป็น data URL ก่อน)
+  /** บันทึก (ถ้า form.id ว่าง = เพิ่มใหม่, ถ้ามี = แก้ไข) */
   const onSave = async () => {
-    // แปลงไฟล์ใหม่ทั้งหมดเป็น data URL เพื่อเก็บถาวร
-    const uploadedDataUrls = await Promise.all(
-      previews.map(p => fileToDataURL(p.file))
-    );
+    try {
+      // validate อย่างง่าย
+      if (!form.number?.trim()) throw new Error("กรุณากรอกหมายเลขห้อง");
+      if (!form.typeId)        throw new Error("กรุณาเลือกประเภทห้อง");
+      if (Number(form.capacity) <= 0) throw new Error("จำนวนคนต่อห้องต้องมากกว่า 0");
+      if (Number(form.price) < 0)     throw new Error("ราคา/คืน ต้องเป็นจำนวนบวก");
 
-    const patched = {
-      ...form,
-      capacity: Number(form.capacity || 0),
-      price: Number(form.price || 0),
-      // รวมรูปเดิม (หลังจากอาจลบบางรูป) + รูปใหม่ที่เพิ่งแปลง
-      images: [ ...(form.images || []), ...uploadedDataUrls ],
-    };
+      setLoading(true);
+      setError("");
 
-    setRooms(prev => prev.map(r => (r.id === form.id ? patched : r)));
+      const payload = {
+        room_number: form.number,
+        room_type_id: Number(form.typeId),
+        capacity: Number(form.capacity || 0),
+        price: String(form.price ?? "0"),
+        status: STATUS_UI_TO_API[form.status] || "available",
+        description: form.detail || "",
+      };
 
-    // เก็บกวาด objectURL ชั่วคราว
-    previews.forEach(p => { try { URL.revokeObjectURL(p.url); } catch {} });
-    setPreviews([]);
-    closeModal();
+      if (!form.id) {
+        await apiPost(`/rooms`, payload);   // CREATE
+      } else {
+        await apiPut(`/rooms/${form.id}`, payload); // UPDATE
+      }
+
+      closeModal();
+      await refreshRooms();
+    } catch (e) {
+      setError(String(e.message || e));
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const isCreate = !form.id;
 
   return (
     <div className="adminPage">
       <div className="adminPageHeader">
-        <h2><span className="headIcon"><BedIcon /></span> ห้องพักทั้งหมด</h2>
+        <h2>
+          <span className="headIcon"><BedIcon /></span> ห้องพักทั้งหมด
+          <small style={{ marginLeft: 10, color: "#6b745f" }}>({rooms.length} ห้อง)</small>
+        </h2>
 
         <div className="tools">
           <label className="filter">
             <span>Filter:</span>
-            <select value={filter} onChange={e => setFilter(e.target.value)}>
+            <select value={filter} onChange={(e) => setFilter(e.target.value)}>
               <option value="all">ทั้งหมด</option>
               <option value="vacant">ว่าง</option>
               <option value="occupied">ไม่ว่าง</option>
             </select>
           </label>
 
-          <button className="btnPrimary" onClick={onAdd}>
+          <button className="btnPrimary" onClick={openCreate}>
             <span className="btnIc">+</span> เพิ่มห้อง
           </button>
         </div>
       </div>
 
-      {/* ===== ตารางห้อง ===== */}
-      <div className="card table">
+      {error && <div style={{ color: "#b00020", marginBottom: 12 }}>{error}</div>}
+      {loading && <div style={{ marginBottom: 12 }}>กำลังโหลด...</div>}
+
+      {/* ตาราง */}
+      <div className="card table adminRooms">
         <div className="tHead">
           <div>ห้อง</div>
           <div>รายละเอียด</div>
-          <div className="center">จำนวนคนต่อห้อง</div>
-          <div className="typeCol">ประเภท</div>
-          <div className="priceCol">ราคา/คืน</div>
+          <div className="center">จำนวนคน</div>
+          <div>ประเภท</div>
+          <div className="right">ราคา/คืน</div>
           <div className="center">สถานะ</div>
           <div className="right">รูปภาพ</div>
         </div>
 
-        {view.map((r, i) => (
-          <div className={"tRow " + (i % 2 ? "alt" : "")} key={r.id}>
-            <div className="cell no">
-              <button className="iconBtn" title="แก้ไข" onClick={() => openEdit(r)}>
+        {view.map((r) => (
+          <div className="tRow" key={r.id}>
+            {/* ห้อง: ปุ่มแก้ไขซ้าย, ขวาเป็น "ห้องเลขที่ <no>" */}
+            <div className="cell--room">
+              <button className="iconBtn roomEdit" title="แก้ไข" onClick={() => openEdit(r)}>
                 <svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25ZM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.9959.9959 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83Z"/></svg>
               </button>
-              <span>{r.number}</span>
+
+              <div className="roomMeta">
+                <span className="roomTitle"></span>
+                <span className="roomNo" title={`ห้องเลขที่ ${r.number}`}>{r.number}</span>
+              </div>
             </div>
 
-            <div>{r.detail}</div>
+            {/* รายละเอียด */}
+            <div className="cell--detail">
+              <div className="detailClamp">{r.detail || "-"}</div>
+            </div>
+
+            {/* คนต่อห้อง */}
             <div className="center">{r.capacity}</div>
-            <div className="typeCol">{r.type}</div>
-            <div className="priceCol">{r.price.toLocaleString()} บาท</div>
 
-            <div className="center">
-              <span className={"pill " + (r.status === "vacant" ? "ok" : "bad")}>
-                {r.status === "vacant" ? "ว่าง" : "ไม่ว่าง"}
-              </span>
+            {/* ประเภท */}
+            <div>
+              {r.type || (types.find(t => t.room_type_id === Number(r.typeId))?.type_name) || "-"}
             </div>
+            
+            {/* ราคา */}
+            <div className="right"><PriceTag value={r.price} /></div>
 
-            <div className="thumbCell">
-              <img src={(r.images && r.images[0]) || roomA} alt="" />
-              <button className="delBtn" onClick={() => onDelete(r.id)}>ลบ</button>
+            {/* สถานะ */}
+            <div className="center"><StatusBadge status={r.status} /></div>
+
+            {/* รูป + ลบ */}
+            <div className="right cell--thumb">
+              <div className="thumbMini">
+                <img src={(r.images && r.images[0]) || roomA} alt="" />
+                <span className="count">{(r.images?.length || 0)}</span>
+              </div>
+              <div className="rowActions">
+                <button className="btnText danger" onClick={() => onDelete(r.id)}>ลบ</button>
+              </div>
             </div>
           </div>
         ))}
       </div>
 
-      {/* ===== MODAL แก้ไข ===== */}
+      {/* Modal เพิ่ม/แก้ไข */}
       {editing && (
         <div className="modalOverlay" onClick={closeModal}>
-          <div className="modalCard" role="dialog" aria-modal="true" onClick={(e)=>e.stopPropagation()}>
-            <h3 className="modalTitle">แก้ไขข้อมูลห้องพัก</h3>
+          <div className="modalCard" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+            <h3 className="modalTitle">{isCreate ? "เพิ่มห้องใหม่" : "แก้ไขข้อมูลห้องพัก"}</h3>
 
             <div className="modalGrid">
               <div className="modalForm">
                 <div className="fRow">
-                  <label>ห้อง</label>
-                  <input value={form.number} onChange={e=>setField("number", e.target.value)} />
+                  <label>หมายเลขห้อง</label>
+                  <input
+                    value={form.number}
+                    onChange={(e) => setField("number", e.target.value)}
+                    placeholder="เช่น 101"
+                  />
                 </div>
 
                 <div className="fRow">
                   <label>ประเภทห้อง</label>
-                  <select value={form.type} onChange={e => setField("type", e.target.value)}>
-                    {!ROOM_TYPES.includes(form.type) && form.type && (
-                      <option value={form.type}>{form.type} (เดิม)</option>
-                    )}
-                    {ROOM_TYPES.map(t => (
-                      <option key={t} value={t}>{t}</option>
+                  <select value={form.typeId} onChange={(e) => setField("typeId", e.target.value)}>
+                    <option value="" disabled>-- เลือกประเภท --</option>
+                    {types.map((t) => (
+                      <option key={t.room_type_id} value={t.room_type_id}>{t.type_name}</option>
                     ))}
                   </select>
                 </div>
 
                 <div className="fRow">
                   <label>รายละเอียด</label>
-                  <input value={form.detail} onChange={e=>setField("detail", e.target.value)} />
+                  <input
+                    value={form.detail}
+                    onChange={(e) => setField("detail", e.target.value)}
+                    placeholder="คำอธิบายสั้น ๆ ของห้อง"
+                  />
                 </div>
 
                 <div className="fRow two">
                   <div>
-                    <label>ราคา/คืน</label>
-                    <input type="number" value={form.price} onChange={e=>setField("price", e.target.value)} />
+                    <label>ราคา/คืน (บาท)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={form.price}
+                      onChange={(e) => setField("price", e.target.value)}
+                    />
                   </div>
                   <div>
                     <label>จำนวนคนต่อห้อง</label>
-                    <input type="number" value={form.capacity} onChange={e=>setField("capacity", e.target.value)} />
+                    <input
+                      type="number"
+                      min="1"
+                      value={form.capacity}
+                      onChange={(e) => setField("capacity", e.target.value)}
+                    />
                   </div>
                 </div>
 
                 <div className="fRow">
                   <label>สถานะ</label>
-                  <select value={form.status} onChange={e=>setField("status", e.target.value)}>
+                  <select value={form.status} onChange={(e) => setField("status", e.target.value)}>
                     <option value="vacant">ว่าง</option>
                     <option value="occupied">ไม่ว่าง</option>
                   </select>
                 </div>
-
-                <div className="fRow">
-                  <label>สิ่งอำนวยความสะดวก</label>
-                  <div className="facilityGrid">
-                    {FACILITY_LIST.map(fa => (
-                      <label key={fa.key} className="chk">
-                        <input
-                          type="checkbox"
-                          checked={!!form.facilities?.[fa.key]}
-                          onChange={()=>toggleFacility(fa.key)}
-                        />
-                        <span>{fa.label}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="fRow">
-                  <label>เลือกรูปภาพ</label>
-                  <input type="file" accept="image/*" multiple onChange={onPickFiles} />
-                </div>
               </div>
 
-              {/* รูปเดิม + พรีวิวรูปใหม่ */}
+              {/* พรีวิวรูป (อัปโหลดจริงต่อ endpoint /room-images ภายหลัง) */}
               <div className="modalGallery">
-                <div className="gTitle">รูปเดิม</div>
+                <div className="gTitle">รูปภาพ</div>
                 <div className="galleryGrid">
+                  {(form.images || []).length === 0 && (
+                    <div className="thumb"><img src={roomA} alt="" /></div>
+                  )}
                   {(form.images || []).map((src, idx) => (
-                    <div className="thumb" key={`old-${idx}`}>
+                    <div className="thumb" key={`img-${idx}`}>
                       <img src={src} alt="" />
-                      <button className="thumbDel" onClick={()=>removeOldImage(idx)}>×</button>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="gTitle">รูปที่เพิ่มใหม่ (พรีวิว)</div>
-                <div className="galleryGrid">
-                  {previews.map((p, idx) => (
-                    <div className="thumb" key={`new-${idx}`}>
-                      <img src={p.url} alt="" />
-                      <button className="thumbDel" onClick={()=>removePreview(idx)}>×</button>
                     </div>
                   ))}
                 </div>
@@ -357,6 +337,15 @@ export default function AdminRooms() {
       )}
     </div>
   );
+}
+
+/* ===== เล็กๆ ใช้แสดงสถานะ/ราคา ===== */
+function StatusBadge({ status }) {
+  const ok = status === "vacant";
+  return <span className={"pill " + (ok ? "ok" : "bad")}>{ok ? "ว่าง" : "ไม่ว่าง"}</span>;
+}
+function PriceTag({ value }) {
+  return <span className="priceTag">{Number(value || 0).toLocaleString()} <small>บาท</small></span>;
 }
 
 function BedIcon() {
