@@ -49,6 +49,8 @@ app.use('/api/payments', publicRateLimit);                     // อัปส�
 app.use('/api/reservations/rooms/status', publicRateLimit);    // เช็คสถานะด้วยโค้ด (public)
 app.use('/api/reservations/banquets/status', publicRateLimit); // เช็คสถานะด้วยโค้ด (public)
 
+const dashboardRoutes = require('./modules/dashboard/dashboard.routes');
+
 app.use('/api', adminRoutes);
 app.use('/api', roomRoutes);
 app.use('/api', banquetRoutes);
@@ -60,6 +62,7 @@ app.use('/api', roomImageRoutes);
 app.use('/api', banquetImageRoutes);
 
 app.use('/api', paymentRoutes);
+app.use('/api', dashboardRoutes);
 
 
 app.listen(port, () => {

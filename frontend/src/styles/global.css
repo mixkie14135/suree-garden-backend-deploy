@@ -133,7 +133,7 @@ body{
 
 /* ========== ADMIN LAYOUT ========== */
 :root{
-  --admin-bg:#f5f6ea;
+  --admin-bg:#f3f4f6;
   --admin-hover:#eaf1d8;
 }
 .admin{ display:flex; min-height:100vh; background:var(--admin-bg); }

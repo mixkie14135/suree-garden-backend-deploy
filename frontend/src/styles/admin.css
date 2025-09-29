@@ -281,3 +281,11 @@
   .authCard{ padding:22px 16px 16px; }
   .authTitle{ font-size:20px; }
 }
+
+/* ---- DASHBOARD: force white cards ---- */
+.adminContent .bg-white {
+  background:#fff !important;
+  border:1px solid var(--line);
+  border-radius:12px;
+  box-shadow:0 6px 18px rgba(0,0,0,.06);
+}
