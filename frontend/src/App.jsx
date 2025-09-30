@@ -11,29 +11,14 @@ import AdminLogin from "./pages/AdminLogin.jsx";
 import ProtectedRoute from "./routes/ProtectedRoute.jsx";
 
 import AdminLayout from "./layouts/AdminLayout.jsx";
-import AdminRooms from "./pages/AdminRooms.jsx";
+import AdminRoomBanquet from "./pages/AdminRoomBanquet.jsx";   // ✅ ใช้อันใหม่
 import AdminBookings from "./pages/AdminBookings.jsx";
 import AdminDashboard from "./pages/AdminDashboard.jsx";
 
 import HomeFull from "./pages/HomeFull.jsx";
 import RoomType from "./pages/RoomType.jsx";
 
-/* ----------------- Temporary placeholders (no new files needed) ----------------- */
-function AdminBanquets() {
-  return (
-    <div className="adminPage">
-      <div className="adminPageHeader">
-        <h2>จัดการห้องจัดเลี้ยง</h2>
-      </div>
-      <div className="emptyBox">
-        <p>ยังไม่มี UI – เดี๋ยวเราจะเชื่อม endpoint และทำตารางรายการให้ภายหลัง</p>
-        <div className="quickRow">
-          <button className="btnText">+ เพิ่มห้องจัดเลี้ยง</button>
-        </div>
-      </div>
-    </div>
-  );
-}
+/* ----------------- Temporary placeholder ----------------- */
 function AdminPayments() {
   return (
     <div className="adminPage">
@@ -88,9 +73,9 @@ export default function App() {
         <Route element={<AdminLayout />}>
           {/* Dashboard เป็น index */}
           <Route index element={<AdminDashboard />} />
-          <Route path="rooms" element={<AdminRooms />} />
-          <Route path="banquets" element={<AdminBanquets />} />  {/* NEW */}
-          <Route path="payments" element={<AdminPayments />} />  {/* NEW */}
+          {/* ✅ ใช้หน้าที่รวมแท็บ rooms/banquets */}
+          <Route path="rooms" element={<AdminRoomBanquet />} /> 
+          <Route path="payments" element={<AdminPayments />} />
           <Route path="bookings" element={<AdminBookings />} />
         </Route>
       </Route>

@@ -72,7 +72,7 @@ function extractRoomId(created) {
   );
 }
 
-export default function AdminRooms() {
+export default function AdminRooms({ embedded = false }) {
   const [rooms, setRooms] = useState([]);
   const [types, setTypes] = useState([]);
   const [filter, setFilter] = useState("all");
@@ -80,7 +80,7 @@ export default function AdminRooms() {
   const [sortDir, setSortDir] = useState("asc");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [activeTab, setActiveTab] = useState("rooms"); // "rooms" หรือ "banquets"
+
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState(emptyForm());
 
@@ -384,72 +384,54 @@ export default function AdminRooms() {
 
   return (
     <div className="adminPage" onClick={() => setMenuRowId(null)}>
-      <div className="adminPageHeader">
-  <h2>
-    <span className="headIcon"></span> จัดการห้อง
-  </h2>
-</div>
 
-{/* Tabs */}
-<div className="tabsWrapper">
-  <div className="tabs">
-    <button
-      className={activeTab === "rooms" ? "tab active" : "tab"}
-      onClick={() => setActiveTab("rooms")}
-    >
-      ห้องพัก
-    </button>
-    <button
-      className={activeTab === "banquets" ? "tab active" : "tab"}
-      onClick={() => setActiveTab("banquets")}
-    >
-      ห้องจัดเลี้ยง
-    </button>
-  </div>
-</div>
+      {/* ถ้าไม่ได้ฝังจากภายนอก คง header ไว้ตามเดิม */}
+      {!embedded && (
+        <div className="adminPageHeader">
+          <h2>
+            <span className="headIcon"></span> จัดการห้อง
+          </h2>
+        </div>
+      )}
 
-{/* Toolbar (info + search ด้านซ้าย / filter+sort+add ด้านขวา) */}
-<div className="toolbar">
-  <div className="toolLeft">
-    <div className="info">
-      <span className="icon">🏠</span>
-      ห้อง{activeTab === "rooms" ? "พัก" : "จัดเลี้ยง"}ทั้งหมด ({view.length} ห้อง)
-    </div>
+      {/* Toolbar (info + search ซ้าย / filter+sort+add ขวา) */}
+      <div className="toolbar">
+        <div className="toolLeft">
+          <div className="info">
+            <span className="icon">🏠</span>
+            ห้องพักทั้งหมด ({view.length} ห้อง)
+          </div>
+          <div className="search">
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="ค้นหา : เลขห้อง / ประเภท / รายละเอียด"
+            />
+          </div>
+        </div>
 
-    <div className="search">
-      <input
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        placeholder="ค้นหา : เลขห้อง / ประเภท / รายละเอียด"
-      />
-    </div>
-  </div>
+        <div className="controls">
+          <label className="filter">
+            <span>Filter:</span>
+            <select value={filter} onChange={(e) => setFilter(e.target.value)} aria-label="room-filter">
+              {FILTER_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </label>
 
-  <div className="controls">
-    <label className="filter">
-      <span>Filter:</span>
-      <select value={filter} onChange={(e) => setFilter(e.target.value)} aria-label="room-filter">
-        {FILTER_OPTIONS.map((o) => (
-          <option key={o.value} value={o.value}>{o.label}</option>
-        ))}
-      </select>
-    </label>
+          <button
+            className="btnPrimary"
+            onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
+          >
+            จัดเรียงเลขห้อง {sortDir === "asc" ? "↑" : "↓"}
+          </button>
 
-    <button
-      className="btnPrimary"
-      onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
-    >
-      จัดเรียงเลขห้อง {sortDir === "asc" ? "↑" : "↓"}
-    </button>
-
-    <button className="btnPrimary" onClick={openCreate}>
-      <span className="btnIc">+</span> เพิ่มห้อง
-    </button>
-  </div>
-</div>
-
-
-
+          <button className="btnPrimary" onClick={openCreate}>
+            <span className="btnIc">+</span> เพิ่มห้อง
+          </button>
+        </div>
+      </div>
 
       {error && <div style={{ color: "#b00020", marginBottom: 12 }}>{error}</div>}
       {loading && <div style={{ marginBottom: 12 }}>กำลังโหลด...</div>}
@@ -676,9 +658,4 @@ function StatusBadge({ status }) {
 }
 function PriceTag({ value }) {
   return <span className="priceTag">{Number(value || 0).toLocaleString()} <small>บาท</small></span>;
-}
-function BedIcon() {
-  return (
-    <svg viewBox="0 0 24 24"><path d="M2 18v-6a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v6h-2v-2H4v2H2Zm2-4h12v-2a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v2Z"/></svg>
-  );
 }

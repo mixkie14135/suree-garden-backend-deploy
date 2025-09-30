@@ -3,6 +3,83 @@
    Assumes global vars: --line, --accent-500, --accent-700, --admin-hover
    ========================================================= */
 
+/* ======= ADMIN LOGIN ======= */
+.authWrap{
+  min-height:100vh;
+  display:flex; align-items:center; justify-content:center;
+  position:relative; background:#f5f7ef;
+  padding:24px;
+}
+.authBg{
+  position:absolute; inset:0; pointer-events:none;
+  background:
+    radial-gradient(1200px 600px at -10% -10%, rgba(123,145,79,.25), rgba(123,145,79,0) 60%),
+    radial-gradient(800px 500px at 110% 110%, rgba(167,191,118,.25), rgba(167,191,118,0) 60%);
+}
+.authCard{
+  position:relative; z-index:1;
+  width:min(480px, 92vw);
+  background:#fff; border:1px solid var(--line); border-radius:16px;
+  box-shadow:0 24px 64px rgba(0,0,0,.12);
+  padding:26px 22px 20px;
+}
+.authBrand{
+  display:flex; align-items:center; gap:12px; margin-bottom:6px;
+}
+.authBrand .logo{
+  width:42px; height:42px; border-radius:12px;
+  display:flex; align-items:center; justify-content:center;
+  background:#f0f4e4; color:#3c5537; font-weight:900;
+  border:1px solid #e2e9cf;
+}
+.authBrand .brandText{ line-height:1.05; }
+.authBrand .brandText strong{ font-size:16px; color:#253; }
+.authBrand .brandText small{ font-size:11px; color:#6b7; letter-spacing:.4px; }
+
+.authTitle{ margin:6px 0 2px; font-size:22px; font-weight:900; color:#222; }
+.authSub{ margin:0 0 14px; color:#667; }
+
+.authForm{ display:grid; gap:12px; }
+.field .label{ display:block; font-weight:700; color:#444; margin-bottom:6px; }
+
+.inputWrap{
+  display:grid; grid-template-columns:32px 1fr 36px; align-items:center;
+  border:1px solid var(--line); border-radius:12px; background:#fff;
+  transition: box-shadow .15s ease, border-color .15s ease;
+}
+.inputWrap:focus-within{
+  border-color:#cfe0a8; box-shadow:0 0 0 4px rgba(167,191,118,.25);
+}
+.inputWrap .ic{ width:32px; height:38px; display:flex; align-items:center; justify-content:center; color:#7a8; }
+.inputWrap .ic svg{ width:18px; height:18px; fill:currentColor; }
+.inputWrap input{
+  border:0; outline:0; background:transparent; height:38px; padding:0 10px;
+  font-size:14px; color:#222;
+}
+.eyeBtn{
+  width:36px; height:36px; border:0; background:transparent; cursor:pointer; color:#8a8;
+  display:flex; align-items:center; justify-content:center; border-left:1px solid #eee;
+}
+.eyeBtn:hover{ color:#556; }
+.eyeBtn svg{ width:18px; height:18px; fill:currentColor; }
+
+.authBtn{
+  margin-top:6px;
+  background:var(--accent-500); color:#fff; border:1px solid var(--accent-700);
+  padding:12px 14px; border-radius:12px; font-weight:900; cursor:pointer;
+}
+.authBtn:hover{ background:var(--accent-700); }
+.authBtn[disabled]{ opacity:.7; cursor:not-allowed; }
+
+.alert.error{
+  background:#ffe9e9; color:#8a1f1f;
+  border:1px solid #f2c7c7; border-radius:12px; padding:10px 12px; margin-bottom:8px;
+  font-weight:700;
+}
+.authFoot{
+  text-align:center; color:#789; font-size:12px; margin-top:12px;
+}
+
 /* ========== HEADER / TOOLBAR ========== */
 .adminPage .adminPageHeader{
   display:flex; align-items:center; justify-content:space-between;
@@ -292,6 +369,7 @@
   background:#fff;
 }
 
+
 /* Responsive: ย่อแล้วให้ซ้อนเป็น 1 คอลัมน์ */
 @media (max-width: 900px){
   .toolbar{
@@ -307,5 +385,4 @@
     width:100%;
   }
 }
-
 

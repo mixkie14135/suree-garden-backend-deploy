@@ -41,10 +41,7 @@ export default function AdminLayout() {
             จัดการห้องพัก
           </MenuItem>
 
-          {/* Banquets (ใหม่) */}
-          <MenuItem to="/admin/banquets" icon={<HallIcon />}>
-            จัดการห้องจัดเลี้ยง
-          </MenuItem>
+          
 
           {/* Payments / Slip approvals (ใหม่) */}
           <MenuItem to="/admin/payments" icon={<SlipIcon />}>

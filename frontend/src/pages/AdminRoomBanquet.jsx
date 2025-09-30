@@ -1,17 +1,48 @@
 // src/pages/AdminRoomBanquet.jsx
 import { useState } from "react";
 import AdminRooms from "./AdminRooms.jsx";
-import AdminBanquets from "./AdminBanquets.jsx";
+
+/** Placeholder สำหรับแท็บ "ห้องจัดเลี้ยง" ชั่วคราว */
+function BanquetsPlaceholder() {
+  return (
+    <div className="adminPage">
+      <div className="toolbar">
+        <div className="toolLeft">
+          <div className="info">
+            <span className="icon">🎉</span>
+            ห้องจัดเลี้ยงทั้งหมด (—)
+          </div>
+          <div className="search">
+            <input disabled placeholder="ค้นหา : ชื่อห้อง / รายละเอียด (ยังไม่เชื่อม API)" />
+          </div>
+        </div>
+        <div className="controls">
+          <label className="filter">
+            <span>Filter:</span>
+            <select disabled><option>ทั้งหมด</option></select>
+          </label>
+          <button className="btnPrimary" disabled>จัดเรียง</button>
+          <button className="btnPrimary" disabled><span className="btnIc">+</span> เพิ่มห้อง</button>
+        </div>
+      </div>
+
+      <div className="card table adminRooms">
+        <div style={{padding:16, color:"#6b6b6b", fontWeight:700}}>
+          ยังไม่เชื่อม API ของห้องจัดเลี้ยง — ส่งเส้นทาง (routes) และ controller มาได้เลย เดี๋ยวผม map ให้ครับ
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function AdminRoomBanquet() {
-  const [activeTab, setActiveTab] = useState("rooms"); // 'rooms' | 'banquets'
+  const [activeTab, setActiveTab] = useState("rooms"); // "rooms" | "banquets"
 
   return (
     <div className="adminPage">
+      {/* Header หลักของหน้า */}
       <div className="adminPageHeader">
-        <h2>
-          <span className="headIcon"><BedIcon /></span> จัดการห้อง
-        </h2>
+        <h2>จัดการห้อง</h2>
       </div>
 
       {/* Tabs */}
@@ -32,18 +63,12 @@ export default function AdminRoomBanquet() {
         </div>
       </div>
 
-      {/* เนื้อหาแต่ละแท็บ */}
+      {/* เนื้อหาของแต่ละแท็บ */}
       {activeTab === "rooms" ? (
         <AdminRooms embedded />
       ) : (
-        <AdminBanquets embedded />
+        <BanquetsPlaceholder />
       )}
     </div>
-  );
-}
-
-function BedIcon() {
-  return (
-    <svg viewBox="0 0 24 24"><path d="M2 18v-6a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v6h-2v-2H4v2H2Zm2-4h12v-2a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v2Z"/></svg>
   );
 }
