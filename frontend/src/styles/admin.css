@@ -6,14 +6,14 @@
 /* ========== HEADER / TOOLBAR ========== */
 .adminPage .adminPageHeader{
   display:flex; align-items:center; justify-content:space-between;
-  margin-bottom:16px; padding:12px 16px;
-  background:#eef1e1; border:1px solid var(--line); border-radius:12px;
+  margin-bottom:16px;
+  /* background:#ffffff; border:1px solid var(--line); border-radius:12px; */
 }
 .adminPage .adminPageHeader h2{
-  margin:0; display:flex; align-items:center; gap:10px; font-size:20px;
+  margin:0; display:flex; align-items:center; font-size:20px;
 }
-.headIcon{ display:inline-flex; width:22px; height:22px; }
-.headIcon svg{ width:22px; height:22px; fill:#6b7a46; }
+/* .headIcon{ display:inline-flex; width:22px; height:22px; }
+.headIcon svg{ width:22px; height:22px; fill:#6b7a46; } */
 
 .tools{ display:flex; align-items:center; gap:12px; }
 .filter{ display:inline-flex; align-items:center; gap:8px; color:#666; }
@@ -21,40 +21,41 @@
 
 /* Buttons */
 .btnPrimary{
-  background:var(--accent-500); color:#fff; border:1px solid var(--accent-700);
+  background:#7c813e; color:#fff; border:1px;
   padding:10px 14px; border-radius:10px; font-weight:800; cursor:pointer;
 }
 .btnPrimary:hover{ background:var(--accent-700); }
 .btnIc{ font-weight:900; margin-right:6px; }
 
+/* ช่องค้นหาใน header ให้สูงพอดี */
+.adminPage .adminPageHeader input[type="text"]{ height:36px; }
+
 /* =========================================================
    TABLE (ADMIN ROOMS)
-   โครง: [ห้อง] [รายละเอียด] [จำนวนคน] [ประเภท] [ราคา/คืน] [สถานะ] [รูปภาพ]
+   โครง: [ห้อง] [ประเภท] [จำนวนคน] [ราคา/คืน] [สถานะ] [รูปภาพ]
    ========================================================= */
 .card{ background:#fff; border:1px solid var(--line); border-radius:12px; }
-.table{ overflow:hidden; }
+.table{ overflow:auto; }            /* <— ป้องกันล้นขอบขวา */
 
 .adminRooms .tHead,
 .adminRooms .tRow{
   display:grid;
-  grid-template-columns: 180px 1.8fr 90px 1.3fr 140px 110px 170px;
+  /* 6 คอลัมน์ตาม JSX ปัจจุบัน */
+  grid-template-columns: 160px 1.2fr 90px 120px 120px 160px;
   gap:16px; padding:14px 18px; align-items:center;
 }
 .adminRooms .tHead{
+  position:sticky; top:0; z-index:5;
   background:#f6f8ee; color:#6b6b6b; font-weight:800;
 }
 .adminRooms .tRow{
   border-top:1px solid var(--line);
-  min-height:84px; /* ให้แต่ละแถวสูงพอดีและไม่ยืด */
+  min-height:84px;
 }
+.adminRooms .tRow:hover{ background:#fafcf4; }
 
-/* ห้อง (ปุ่มแก้ไขซ้าย + ข้อความขวา) */
-.cell--room{
-  display:grid;
-  grid-template-columns: 40px 1fr; /* 40px ปุ่ม, ที่เหลือข้อความ */
-  gap:10px;
-  align-items:center;
-}
+/* ห้อง (ปุ่มแก้ไข + ชื่อห้อง) */
+.cell--room{ position:relative; display:grid; grid-template-columns:40px 1fr; gap:10px; align-items:center; }
 .roomEdit{
   width:32px; height:32px; border-radius:8px; border:1px solid var(--line);
   display:inline-flex; align-items:center; justify-content:center;
@@ -63,19 +64,24 @@
 .roomEdit:hover{ background:var(--admin-hover); }
 .roomEdit svg{ width:18px; height:18px; fill:#455; }
 
-/* กล่องข้อความขวาของปุ่ม */
-.roomMeta{
-  display:flex; align-items:baseline; gap:8px; min-width:0;
-}
-.roomTitle{ font-size:12px; color:#888; white-space:nowrap; }
+.roomMeta{ display:flex; align-items:baseline; gap:8px; min-width:0; }
 .roomNo{ font-weight:900; font-size:16px; color:#2b2b2b; white-space:nowrap; }
 
-/* รายละเอียด (ตัดบรรทัด 2 บรรทัด) */
-.cell--detail .detailClamp{
-  color:#444;
-  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
-  overflow:hidden;
+/* เมนูย่อยใต้ปุ่มดินสอ */
+.actionMenu{
+  position:absolute; left:0; top:42px; z-index:30;
+  background:#fff; border:1px solid var(--line); border-radius:10px;
+  box-shadow:0 10px 22px rgba(0,0,0,.12);
+  padding:6px; min-width:160px;
 }
+.actionMenu button{
+  display:block; width:100%; text-align:left;
+  background:#fff; border:0; border-radius:8px;
+  padding:8px 10px; font-weight:800; color:#333; cursor:pointer;
+}
+.actionMenu button:hover{ background:var(--admin-hover); }
+.actionMenu .danger{ color:#9c1f1f; }
+.actionMenu .danger:hover{ background:#ffecec; }
 
 /* alignment ทั่วไป */
 .center{ text-align:center; }
@@ -90,16 +96,12 @@
 .priceTag small{ font-weight:600; color:#666; }
 
 /* Pill สถานะ */
-.pill{
-  display:inline-block; padding:6px 10px; border-radius:999px; font-weight:800; font-size:13px;
-}
+.pill{ display:inline-block; padding:6px 10px; border-radius:999px; font-weight:800; font-size:13px; }
 .pill.ok{ background:#dff2d9; color:#2f7a34; }
 .pill.bad{ background:#ffd8d8; color:#9c1f1f; }
 
-/* รูปตัวอย่าง + ปุ่มลบ */
-.cell--thumb{
-  display:flex; align-items:center; justify-content:flex-end; gap:10px;
-}
+/* รูปตัวอย่าง */
+.cell--thumb{ display:flex; align-items:center; justify-content:flex-end; }
 .thumbMini{
   position:relative; width:86px; height:56px;
   border:1px solid var(--line); border-radius:8px; overflow:hidden; background:#fafafa;
@@ -109,40 +111,27 @@
   position:absolute; right:6px; bottom:6px; padding:2px 6px;
   background:rgba(0,0,0,.6); color:#fff; font-size:11px; border-radius:999px;
 }
-.rowActions .btnText{
-  background:#fff; border:1px solid var(--line); border-radius:10px;
-  padding:8px 12px; font-weight:800; cursor:pointer; color:#444;
-}
-.rowActions .btnText:hover{ background:#f4f4f4; }
-.rowActions .btnText.danger{ border-color:#e6b9b9; color:#9c1f1f; }
-.rowActions .btnText.danger:hover{ background:#ffecec; }
-
-/* ลบสไตล์เก่าที่เคยชี้ typeCol/priceCol (ไม่ใช้แล้ว) */
-.table .tHead .typeCol,
-.table .tRow  .typeCol,
-.table .tHead .priceCol,
-.table .tRow  .priceCol{ padding:0; text-align:inherit; }
 
 /* ========== RESPONSIVE ========== */
 @media (max-width: 1280px){
   .adminRooms .tHead, .adminRooms .tRow{
-    grid-template-columns: 160px 1.7fr 90px 1.2fr 130px 110px 150px;
+    grid-template-columns: 150px 1.2fr 90px 120px 120px 150px;
   }
 }
 @media (max-width: 1080px){
-  /* ซ่อนคอลัมน์รูปภาพให้พอดีจอ */
+  /* ซ่อนคอลัมน์รูปภาพเมื่อพื้นที่แคบ */
   .adminRooms .tHead > :nth-last-child(1),
   .adminRooms .tRow  > :nth-last-child(1){ display:none; }
   .adminRooms .tHead, .adminRooms .tRow{
-    grid-template-columns: 160px 1.7fr 90px 1.3fr 130px 110px;
+    grid-template-columns: 150px 1.3fr 90px 130px 120px;
   }
 }
 @media (max-width: 900px){
   /* ซ่อน “ประเภท” เพิ่ม เพื่อให้อยู่ในบรรทัดเดียว */
-  .adminRooms .tHead > :nth-child(4),
-  .adminRooms .tRow  > :nth-child(4){ display:none; }
+  .adminRooms .tHead > :nth-child(2),
+  .adminRooms .tRow  > :nth-child(2){ display:none; }
   .adminRooms .tHead, .adminRooms .tRow{
-    grid-template-columns: 150px 1.8fr 90px 140px 110px;
+    grid-template-columns: 150px 90px 120px 120px;
   }
 }
 
@@ -190,98 +179,6 @@
   .galleryGrid{ grid-template-columns:repeat(2, minmax(0, 1fr)); }
 }
 
-/* ===== Dashboard empty pattern ===== */
-.adminEmpty { padding: 0; }
-.emptyBox{
-  padding:16px 18px; background:#fff; border:1px solid var(--line);
-  border-radius:12px; color:#6b6b6b; font-weight:700;
-}
-.emptyBox p{ margin:0; }
-.quickRow{ margin-top:10px; display:flex; gap:10px; }
-
-/* ======= ADMIN LOGIN ======= */
-.authWrap{
-  min-height:100vh;
-  display:flex; align-items:center; justify-content:center;
-  position:relative; background:#f5f7ef;
-  padding:24px;
-}
-.authBg{
-  position:absolute; inset:0; pointer-events:none;
-  background:
-    radial-gradient(1200px 600px at -10% -10%, rgba(123,145,79,.25), rgba(123,145,79,0) 60%),
-    radial-gradient(800px 500px at 110% 110%, rgba(167,191,118,.25), rgba(167,191,118,0) 60%);
-}
-.authCard{
-  position:relative; z-index:1;
-  width:min(480px, 92vw);
-  background:#fff; border:1px solid var(--line); border-radius:16px;
-  box-shadow:0 24px 64px rgba(0,0,0,.12);
-  padding:26px 22px 20px;
-}
-.authBrand{
-  display:flex; align-items:center; gap:12px; margin-bottom:6px;
-}
-.authBrand .logo{
-  width:42px; height:42px; border-radius:12px;
-  display:flex; align-items:center; justify-content:center;
-  background:#f0f4e4; color:#3c5537; font-weight:900;
-  border:1px solid #e2e9cf;
-}
-.authBrand .brandText{ line-height:1.05; }
-.authBrand .brandText strong{ font-size:16px; color:#253; }
-.authBrand .brandText small{ font-size:11px; color:#6b7; letter-spacing:.4px; }
-
-.authTitle{ margin:6px 0 2px; font-size:22px; font-weight:900; color:#222; }
-.authSub{ margin:0 0 14px; color:#667; }
-
-.authForm{ display:grid; gap:12px; }
-.field .label{ display:block; font-weight:700; color:#444; margin-bottom:6px; }
-
-.inputWrap{
-  display:grid; grid-template-columns:32px 1fr 36px; align-items:center;
-  border:1px solid var(--line); border-radius:12px; background:#fff;
-  transition: box-shadow .15s ease, border-color .15s ease;
-}
-.inputWrap:focus-within{
-  border-color:#cfe0a8; box-shadow:0 0 0 4px rgba(167,191,118,.25);
-}
-.inputWrap .ic{ width:32px; height:38px; display:flex; align-items:center; justify-content:center; color:#7a8; }
-.inputWrap .ic svg{ width:18px; height:18px; fill:currentColor; }
-.inputWrap input{
-  border:0; outline:0; background:transparent; height:38px; padding:0 10px;
-  font-size:14px; color:#222;
-}
-.eyeBtn{
-  width:36px; height:36px; border:0; background:transparent; cursor:pointer; color:#8a8;
-  display:flex; align-items:center; justify-content:center; border-left:1px solid #eee;
-}
-.eyeBtn:hover{ color:#556; }
-.eyeBtn svg{ width:18px; height:18px; fill:currentColor; }
-
-.authBtn{
-  margin-top:6px;
-  background:var(--accent-500); color:#fff; border:1px solid var(--accent-700);
-  padding:12px 14px; border-radius:12px; font-weight:900; cursor:pointer;
-}
-.authBtn:hover{ background:var(--accent-700); }
-.authBtn[disabled]{ opacity:.7; cursor:not-allowed; }
-
-.alert.error{
-  background:#ffe9e9; color:#8a1f1f;
-  border:1px solid #f2c7c7; border-radius:12px; padding:10px 12px; margin-bottom:8px;
-  font-weight:700;
-}
-.authFoot{
-  text-align:center; color:#789; font-size:12px; margin-top:12px;
-}
-
-/* mobile */
-@media (max-width:520px){
-  .authCard{ padding:22px 16px 16px; }
-  .authTitle{ font-size:20px; }
-}
-
 /* ---- DASHBOARD: force white cards ---- */
 .adminContent .bg-white {
   background:#fff !important;
@@ -289,3 +186,126 @@
   border-radius:12px;
   box-shadow:0 6px 18px rgba(0,0,0,.06);
 }
+
+/* ===== Dashboard empty pattern ===== */
+.adminEmpty { padding:0; }
+.emptyBox{
+  padding:16px 18px; background:#fff; border:1px solid var(--line);
+  border-radius:12px; color:#6b6b6b; font-weight:700;
+}
+.emptyBox p{ margin:0; }
+.quickRow{ margin-top:10px; display:flex; gap:10px; }
+
+
+/* --- SweetAlert2 on top of app modals --- */
+.swal2-container{
+  z-index: 10000 !important;   /* สูงกว่า .modalOverlay (2000) */
+}
+.swal2-popup{
+  border-radius: 14px;
+}
+
+/* --- Textarea in room modal --- */
+.modalForm .textarea{
+  width: 100%;
+  min-height: 120px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #fff;
+  font: inherit;
+  line-height: 1.4;
+  resize: vertical;            /* ให้ยืดสูงได้ตามต้องการ */
+}
+
+/* Tabs wrapper */
+.tabsWrapper {
+  margin-bottom: -1px; /* ให้แท็บต่อเนื่องกับ toolbar */
+}
+.tabs {
+  display: flex;
+  gap: 0;
+}
+.tab {
+  padding: 12px 24px;
+  border: 1px solid var(--line);
+  border-bottom: none;
+  background: #f6f8ee;
+  cursor: pointer;
+  font-weight: 700;
+  color: #555;
+  border-radius: 12px 12px 0 0;
+}
+.tab.active {
+  background: #7c813e;
+  color: #fff;
+  border-bottom: 2px solid #fff;
+  position: relative;
+  top: 1px;
+}
+
+/* ========== TABS + TOOLBAR ========== */
+/* (ส่วน tabs ที่มีอยู่แล้วคงเดิมได้) */
+
+/* Toolbar: ซ้ายเป็นกองแนวตั้ง (info + search), ขวาเป็นปุ่ม/ตัวกรอง */
+.toolbar{
+  display:grid;
+  grid-template-columns: 1fr auto;
+  align-items:center;
+  gap:16px;
+  padding:14px 16px;
+  background:#fff;
+  border:1px solid var(--line);
+  border-top:none;
+  border-radius:0 12px 12px 12px;
+  margin-bottom:10px;
+}
+
+.toolLeft{
+  display:flex;
+  flex-direction:column; /* info อยู่บน, search อยู่ล่าง */
+  gap:8px;
+}
+
+.toolbar .info{
+  font-weight:700; color:#444;
+  display:flex; align-items:center; gap:8px;
+}
+
+.toolbar .search input{
+  width: 380px;           /* ปรับให้กว้างกำลังดี เหมือนใน Figma */
+  max-width: 100%;
+  border:1px solid var(--line);
+  border-radius:10px;
+  padding:10px 12px;
+  background:#fff;
+}
+
+.toolbar .controls{
+  display:flex; align-items:center; gap:10px;
+}
+
+.toolbar select{
+  border:1px solid var(--line);
+  border-radius:8px;
+  padding:6px 10px;
+  background:#fff;
+}
+
+/* Responsive: ย่อแล้วให้ซ้อนเป็น 1 คอลัมน์ */
+@media (max-width: 900px){
+  .toolbar{
+    grid-template-columns: 1fr;
+    gap:12px;
+  }
+  .toolbar .controls{
+    justify-content:flex-start;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+  .toolbar .search input{
+    width:100%;
+  }
+}
+
+

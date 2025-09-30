@@ -18,6 +18,7 @@ router.get('/dashboard/rooms/by-type',       requireAdminAuth, ctrl.roomsByType)
 router.get('/dashboard/banquets/status',      requireAdminAuth, ctrl.banquetsStatus);
 router.get('/dashboard/banquets/utilization', requireAdminAuth, ctrl.banquetsUtilization);
 
+
 /// REVENUE (รวม rooms + banquets)
 router.get('/dashboard/revenue',             requireAdminAuth, ctrl.revenue);
 

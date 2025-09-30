@@ -156,7 +156,7 @@ body{
 .menu-item .mi-ic svg{ width:18px; height:18px; fill:currentColor; }
 
 .menu-item:hover{ background:var(--admin-hover); border-color:#dfe7c8; }
-.menu-item.active{ background:var(--accent-700); color:#fff; }
+.menu-item.active{ background:#7c813e; color:#fff; }
 .menu-item.active svg{ fill:#fff; }
 
 .menu-item.logout{ margin-top:auto; color:#7a1b1b; }

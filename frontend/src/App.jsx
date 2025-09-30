@@ -13,11 +13,41 @@ import ProtectedRoute from "./routes/ProtectedRoute.jsx";
 import AdminLayout from "./layouts/AdminLayout.jsx";
 import AdminRooms from "./pages/AdminRooms.jsx";
 import AdminBookings from "./pages/AdminBookings.jsx";
-import AdminDashboard from "./pages/AdminDashboard.jsx"; // <-- เพิ่ม
+import AdminDashboard from "./pages/AdminDashboard.jsx";
 
 import HomeFull from "./pages/HomeFull.jsx";
 import RoomType from "./pages/RoomType.jsx";
 
+/* ----------------- Temporary placeholders (no new files needed) ----------------- */
+function AdminBanquets() {
+  return (
+    <div className="adminPage">
+      <div className="adminPageHeader">
+        <h2>จัดการห้องจัดเลี้ยง</h2>
+      </div>
+      <div className="emptyBox">
+        <p>ยังไม่มี UI – เดี๋ยวเราจะเชื่อม endpoint และทำตารางรายการให้ภายหลัง</p>
+        <div className="quickRow">
+          <button className="btnText">+ เพิ่มห้องจัดเลี้ยง</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+function AdminPayments() {
+  return (
+    <div className="adminPage">
+      <div className="adminPageHeader">
+        <h2>อนุมัติสลิป</h2>
+      </div>
+      <div className="emptyBox">
+        <p>หน้านี้จะแสดงสลิปที่สถานะ <strong>pending</strong> ให้กด Approve / Reject</p>
+      </div>
+    </div>
+  );
+}
+
+/* -------------------------------- Public home -------------------------------- */
 function PublicHome() {
   return (
     <>
@@ -47,18 +77,20 @@ export default function App() {
         }
       />
 
-      {/* ถ้า RoomType ของคุณมี header/footer ในตัวอยู่แล้ว ไม่ต้องห่อเพิ่ม */}
+      {/* ถ้า RoomType มี header/footer ในตัวอยู่แล้ว ไม่ต้องห่อเพิ่ม */}
       <Route path="/rooms/:slug" element={<RoomType />} />
 
       {/* Admin Auth */}
       <Route path="/admin/login" element={<AdminLogin />} />
 
-      {/* Admin Area */}
+      {/* Admin Area (protected) */}
       <Route path="/admin" element={<ProtectedRoute />}>
         <Route element={<AdminLayout />}>
-          {/* ให้ Dashboard เป็น index */}
+          {/* Dashboard เป็น index */}
           <Route index element={<AdminDashboard />} />
           <Route path="rooms" element={<AdminRooms />} />
+          <Route path="banquets" element={<AdminBanquets />} />  {/* NEW */}
+          <Route path="payments" element={<AdminPayments />} />  {/* NEW */}
           <Route path="bookings" element={<AdminBookings />} />
         </Route>
       </Route>

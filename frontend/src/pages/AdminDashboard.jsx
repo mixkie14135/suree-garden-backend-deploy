@@ -9,34 +9,9 @@ import {
   CartesianGrid,
 } from "recharts";
 
-/* ---------------------------------- Types --------------------------------- */
-
-type Period = "today" | "month";
-type TabKey = "rooms" | "banquets";
-
-type RoomTypeAgg = { type_name: string; reservations: number };
-type RevenueAgg = { label: string; amount: number };
-
-type KPIRow = {
-  totalRooms: number;
-  maintenanceRooms: number;
-  occupiedOrBooked: number; // confirmed/checked_in + booked window (today)
-  pendingHolds: number; // pending & not expired
-  checkinToday: number;
-  checkoutToday: number;
-};
-
-type BanquetKPIRow = {
-  totalBanquets: number;
-  maintenanceBanquets: number;
-  occupiedOrBooked: number;
-  pendingHolds: number;
-  eventsToday: number; // จำนวนอีเวนต์ที่เริ่มวันนี้
-};
-
 /* ------------------------------- Mocked data ------------------------------- */
-/** NOTE: ส่วนนี้คือ mock เพื่อให้ดูหน้าตา – ภายหลังผูก API แล้วคำนวณจาก backend */
-const MOCK_ROOMS_KPI_TODAY: KPIRow = {
+/** NOTE: ตอนนี้เป็น mock ให้เห็น UI ก่อน — เดี๋ยวค่อยผูก API ภายหลัง */
+const MOCK_ROOMS_KPI_TODAY = {
   totalRooms: 48,
   maintenanceRooms: 3,
   occupiedOrBooked: 22,
@@ -44,7 +19,7 @@ const MOCK_ROOMS_KPI_TODAY: KPIRow = {
   checkinToday: 11,
   checkoutToday: 9,
 };
-const MOCK_ROOMS_KPI_MONTH: KPIRow = {
+const MOCK_ROOMS_KPI_MONTH = {
   totalRooms: 48,
   maintenanceRooms: 2,
   occupiedOrBooked: 28,
@@ -53,7 +28,7 @@ const MOCK_ROOMS_KPI_MONTH: KPIRow = {
   checkoutToday: 0,
 };
 
-const MOCK_ROOMTYPE_TODAY: RoomTypeAgg[] = [
+const MOCK_ROOMTYPE_TODAY = [
   { type_name: "ดีลักซ์", reservations: 7 },
   { type_name: "ซูพีเรีย", reservations: 5 },
   { type_name: "สวีท", reservations: 3 },
@@ -63,7 +38,7 @@ const MOCK_ROOMTYPE_TODAY: RoomTypeAgg[] = [
   { type_name: "การ์เด้นวิว", reservations: 1 },
 ];
 
-const MOCK_ROOMTYPE_MONTH: RoomTypeAgg[] = [
+const MOCK_ROOMTYPE_MONTH = [
   { type_name: "ดีลักซ์", reservations: 95 },
   { type_name: "ซูพีเรีย", reservations: 76 },
   { type_name: "สวีท", reservations: 42 },
@@ -73,23 +48,23 @@ const MOCK_ROOMTYPE_MONTH: RoomTypeAgg[] = [
   { type_name: "การ์เด้นวิว", reservations: 22 },
 ];
 
-const MOCK_REVENUE_TODAY: RevenueAgg[] = [
+const MOCK_REVENUE_TODAY = [
   { label: "Rooms", amount: 24500 },
   { label: "Banquets", amount: 18000 },
 ];
-const MOCK_REVENUE_MONTH: RevenueAgg[] = [
+const MOCK_REVENUE_MONTH = [
   { label: "Rooms", amount: 725000 },
   { label: "Banquets", amount: 384000 },
 ];
 
-const MOCK_BANQUETS_KPI_TODAY: BanquetKPIRow = {
+const MOCK_BANQUETS_KPI_TODAY = {
   totalBanquets: 3,
   maintenanceBanquets: 0,
-  occupiedOrBooked: 2, // มีอีเวนต์จองทับวันนี้
+  occupiedOrBooked: 2,
   pendingHolds: 1,
   eventsToday: 2,
 };
-const MOCK_BANQUETS_KPI_MONTH: BanquetKPIRow = {
+const MOCK_BANQUETS_KPI_MONTH = {
   totalBanquets: 3,
   maintenanceBanquets: 0,
   occupiedOrBooked: 2,
@@ -99,16 +74,10 @@ const MOCK_BANQUETS_KPI_MONTH: BanquetKPIRow = {
 
 /* ------------------------------- UI helpers -------------------------------- */
 
-type CardProps = {
-  title?: string;
-  className?: string;
-  children: React.ReactNode;
-};
-function Card({ title, className = "", children }: CardProps) {
+function Card({ title, className = "", children }) {
   return (
     <div
       className={[
-        // ✅ พื้นหลังขาว + เงา + กรอบชัด
         "bg-white rounded-2xl shadow-md border border-gray-200",
         "p-5 sm:p-6",
         className,
@@ -124,35 +93,22 @@ function Card({ title, className = "", children }: CardProps) {
   );
 }
 
-type StatRowProps = {
-  label: string;
-  value: string | number;
-  emphasize?: boolean;
-};
-function StatRow({ label, value, emphasize }: StatRowProps) {
+function StatRow({ label, value, emphasize }) {
   return (
     <div className="flex items-center justify-between py-1">
       <span className="text-gray-600">{label}</span>
-      <span
-        className={`font-semibold ${
-          emphasize ? "text-gray-900" : "text-gray-800"
-        }`}
-      >
+      <span className={`font-semibold ${emphasize ? "text-gray-900" : "text-gray-800"}`}>
         {value}
       </span>
     </div>
   );
 }
 
-function Progress({ value }: { value: number }) {
-  const v = Math.min(100, Math.max(0, value));
+function Progress({ value }) {
+  const v = Math.min(100, Math.max(0, value || 0));
   return (
     <div className="w-full h-2 rounded-full bg-gray-100 overflow-hidden">
-      <div
-        className="h-full bg-gray-900"
-        style={{ width: `${v}%` }}
-        aria-label={`progress-${v}`}
-      />
+      <div className="h-full bg-gray-900" style={{ width: `${v}%` }} aria-label={`progress-${v}`} />
     </div>
   );
 }
@@ -160,29 +116,24 @@ function Progress({ value }: { value: number }) {
 /* ------------------------------- Main screen ------------------------------- */
 
 export default function AdminDashboard() {
-  const [period, setPeriod] = useState<Period>("today");
-  const [tab, setTab] = useState<TabKey>("rooms");
+  const [period, setPeriod] = useState("today"); // "today" | "month"
+  const [tab, setTab] = useState("rooms"); // "rooms" | "banquets"
 
   // KPIs (Rooms)
-  const roomKpi = useMemo<KPIRow>(() => {
+  const roomKpi = useMemo(() => {
     return period === "today" ? MOCK_ROOMS_KPI_TODAY : MOCK_ROOMS_KPI_MONTH;
   }, [period]);
 
   // KPIs (Banquets)
-  const banquetKpi = useMemo<BanquetKPIRow>(() => {
-    return period === "today"
-      ? MOCK_BANQUETS_KPI_TODAY
-      : MOCK_BANQUETS_KPI_MONTH;
+  const banquetKpi = useMemo(() => {
+    return period === "today" ? MOCK_BANQUETS_KPI_TODAY : MOCK_BANQUETS_KPI_MONTH;
   }, [period]);
 
-  // Utilization (ใช้ห้องที่พร้อมให้บริการเท่านั้น)
+  // Utilization (ใช้เฉพาะห้องที่พร้อมให้บริการ)
   const roomsReady = Math.max(0, roomKpi.totalRooms - roomKpi.maintenanceRooms);
   const roomsUtilPct =
     roomsReady > 0
-      ? Math.round(
-          ((roomKpi.occupiedOrBooked + roomKpi.pendingHolds) / roomsReady) *
-            100
-        )
+      ? Math.round(((roomKpi.occupiedOrBooked + roomKpi.pendingHolds) / roomsReady) * 100)
       : 0;
 
   // Room type bar data
@@ -199,7 +150,6 @@ export default function AdminDashboard() {
   const revenueTotal = revenue.reduce((sum, r) => sum + r.amount, 0);
 
   return (
-    // ✅ พื้นหลังหน้าทั้งหน้าเป็นเทาอ่อน เพื่อให้การ์ดขาวเด่นชัด
     <div className="min-h-screen bg-gray-100 px-4 sm:px-6 lg:px-8 py-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
@@ -267,18 +217,14 @@ export default function AdminDashboard() {
             </div>
           </Card>
 
-          <Card
-            title={`Utilization (${period === "today" ? "Today" : "Avg / Month"})`}
-          >
+          <Card title={`Utilization (${period === "today" ? "Today" : "Avg / Month"})`}>
             <div className="space-y-2">
               <StatRow
                 label="Occupied / Booked (incl. pending holds)"
                 value={roomKpi.occupiedOrBooked + roomKpi.pendingHolds}
               />
               <Progress value={roomsUtilPct} />
-              <div className="text-sm text-gray-500 mt-1">
-                {roomsUtilPct}% of ready rooms
-              </div>
+              <div className="text-sm text-gray-500 mt-1">{roomsUtilPct}% of ready rooms</div>
             </div>
           </Card>
 
@@ -293,27 +239,16 @@ export default function AdminDashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
           <Card title="Static Banquet Status">
             <div className="space-y-2">
-              <StatRow
-                label="Total Banquet Rooms"
-                value={banquetKpi.totalBanquets}
-              />
+              <StatRow label="Total Banquet Rooms" value={banquetKpi.totalBanquets} />
               <StatRow
                 label="Available"
-                value={Math.max(
-                  0,
-                  banquetKpi.totalBanquets - banquetKpi.maintenanceBanquets
-                )}
+                value={Math.max(0, banquetKpi.totalBanquets - banquetKpi.maintenanceBanquets)}
               />
-              <StatRow
-                label="Maintenance"
-                value={banquetKpi.maintenanceBanquets}
-              />
+              <StatRow label="Maintenance" value={banquetKpi.maintenanceBanquets} />
             </div>
           </Card>
 
-          <Card
-            title={`Utilization (${period === "today" ? "Today" : "Avg / Month"})`}
-          >
+          <Card title={`Utilization (${period === "today" ? "Today" : "Avg / Month"})`}>
             <div className="space-y-2">
               <StatRow
                 label="Booked (incl. holds)"
@@ -323,8 +258,7 @@ export default function AdminDashboard() {
                 value={
                   banquetKpi.totalBanquets > 0
                     ? Math.round(
-                        ((banquetKpi.occupiedOrBooked +
-                          banquetKpi.pendingHolds) /
+                        ((banquetKpi.occupiedOrBooked + banquetKpi.pendingHolds) /
                           banquetKpi.totalBanquets) *
                           100
                       )
@@ -347,18 +281,13 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Reservations by Room Type */}
         <Card
-          title={`Reservations by Room Type (${
-            period === "today" ? "Today" : "This month"
-          })`}
+          title={`Reservations by Room Type (${period === "today" ? "Today" : "This month"})`}
           className="lg:col-span-2 min-h-[20rem]"
         >
           {tab === "rooms" ? (
             <div className="w-full">
               <ResponsiveContainer width="100%" height={320}>
-                <BarChart
-                  data={roomTypeData}
-                  margin={{ top: 8, right: 12, left: 0, bottom: 8 }}
-                >
+                <BarChart data={roomTypeData} margin={{ top: 8, right: 12, left: 0, bottom: 8 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="type_name" tick={{ fontSize: 12 }} />
                   <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
@@ -369,8 +298,7 @@ export default function AdminDashboard() {
             </div>
           ) : (
             <div className="text-sm text-gray-500">
-              (No banquet type defined — you can add a simple breakdown per room
-              instead later.)
+              (No banquet type defined — you can add a simple breakdown per room later.)
             </div>
           )}
         </Card>
@@ -379,18 +307,10 @@ export default function AdminDashboard() {
         <Card title={`Revenue (${period === "today" ? "Today" : "This month"})`}>
           <div className="space-y-3">
             {revenue.map((r) => (
-              <StatRow
-                key={r.label}
-                label={r.label}
-                value={Intl.NumberFormat("th-TH").format(r.amount)}
-              />
+              <StatRow key={r.label} label={r.label} value={Intl.NumberFormat("th-TH").format(r.amount)} />
             ))}
             <div className="border-t pt-2 mt-1">
-              <StatRow
-                label="Total"
-                value={Intl.NumberFormat("th-TH").format(revenueTotal)}
-                emphasize
-              />
+              <StatRow label="Total" value={Intl.NumberFormat("th-TH").format(revenueTotal)} emphasize />
             </div>
           </div>
         </Card>
