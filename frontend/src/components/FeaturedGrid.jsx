@@ -20,7 +20,7 @@ export default function FeaturedGrid(){
 
             <Link
               className="linkAll"
-              to="/home"
+              to="/discover"
               onClick={() => window.scrollTo(0, 0)}
             >
               ดูทั้งหมด <span aria-hidden="true">→</span>

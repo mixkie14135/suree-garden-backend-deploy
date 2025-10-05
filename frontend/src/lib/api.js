@@ -34,7 +34,7 @@ export async function apiGet(path, params) {
   const qs = params ? "?" + new URLSearchParams(params).toString() : "";
   const res = await fetch(`${API_BASE}${path}${qs}`, {
     credentials: "include",
-    headers: authHeader(), // << แนบ token
+    headers: authHeader(),
   });
   return handle(res);
 }
@@ -60,7 +60,7 @@ export async function apiDelete(path) {
   const res = await fetch(`${API_BASE}${path}`, {
     method: "DELETE",
     credentials: "include",
-    headers: authHeader(), // << แนบ token
+    headers: authHeader(),
   });
   return handle(res);
 }
@@ -75,8 +75,7 @@ export async function apiUpload(path, file, fieldName = "file", extraFields = {}
     method: "POST",
     credentials: "include",
     headers: {
-      // อย่าใส่ Content-Type เอง ให้ browser จัดการ boundary
-      ...authHeader(), // << ใส่ Authorization ตรงนี้
+      ...authHeader(),
     },
     body: fd,
   });
@@ -98,3 +97,38 @@ export function fileUrl(p) {
   const rel = norm.startsWith("/") ? norm : "/" + norm;
   return `${API_ORIGIN}${rel}`;
 }
+
+/* ===================== Banquet API (NEW) ===================== */
+export const banquetApi = {
+  // list + include=images (backend รองรับ /banquets?include=images หรือจะไม่ใส่ก็ได้)
+  async list(params = {}) {
+    const include = params.include || "images";
+    const res = await apiGet("/banquets", { include });
+    return res;
+  },
+  async get(id, params = {}) {
+    return apiGet(`/banquets/${id}`, params);
+  },
+  async create(payload) {
+    return apiPost("/banquets", payload);
+  },
+  async update(id, payload) {
+    return apiPut(`/banquets/${id}`, payload);
+  },
+  async remove(id) {
+    return apiDelete(`/banquets/${id}`);
+  },
+
+  // images
+  async listImages(banquetId) {
+    const res = await apiGet(`/banquets/${banquetId}/images`);
+    // controller คืน { status:'ok', data:[...] } => normalize
+    return toArray(res);
+  },
+  async uploadImage(banquetId, file) {
+    return apiUpload(`/banquets/${banquetId}/images`, file, "file");
+  },
+  async deleteImage(banquetId, imageId) {
+    return apiDelete(`/banquets/${banquetId}/images/${imageId}`);
+  },
+};

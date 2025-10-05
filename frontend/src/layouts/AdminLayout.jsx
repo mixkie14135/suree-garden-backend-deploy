@@ -38,7 +38,7 @@ export default function AdminLayout() {
 
           {/* Rooms */}
           <MenuItem to="/admin/rooms" icon={<BedIcon />}>
-            จัดการห้องพัก
+            จัดการห้อง
           </MenuItem>
 
           

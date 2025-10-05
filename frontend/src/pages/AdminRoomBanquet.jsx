@@ -1,39 +1,7 @@
 // src/pages/AdminRoomBanquet.jsx
 import { useState } from "react";
 import AdminRooms from "./AdminRooms.jsx";
-
-/** Placeholder สำหรับแท็บ "ห้องจัดเลี้ยง" ชั่วคราว */
-function BanquetsPlaceholder() {
-  return (
-    <div className="adminPage">
-      <div className="toolbar">
-        <div className="toolLeft">
-          <div className="info">
-            <span className="icon">🎉</span>
-            ห้องจัดเลี้ยงทั้งหมด (—)
-          </div>
-          <div className="search">
-            <input disabled placeholder="ค้นหา : ชื่อห้อง / รายละเอียด (ยังไม่เชื่อม API)" />
-          </div>
-        </div>
-        <div className="controls">
-          <label className="filter">
-            <span>Filter:</span>
-            <select disabled><option>ทั้งหมด</option></select>
-          </label>
-          <button className="btnPrimary" disabled>จัดเรียง</button>
-          <button className="btnPrimary" disabled><span className="btnIc">+</span> เพิ่มห้อง</button>
-        </div>
-      </div>
-
-      <div className="card table adminRooms">
-        <div style={{padding:16, color:"#6b6b6b", fontWeight:700}}>
-          ยังไม่เชื่อม API ของห้องจัดเลี้ยง — ส่งเส้นทาง (routes) และ controller มาได้เลย เดี๋ยวผม map ให้ครับ
-        </div>
-      </div>
-    </div>
-  );
-}
+import AdminBanquets from "./AdminBanquets.jsx";
 
 export default function AdminRoomBanquet() {
   const [activeTab, setActiveTab] = useState("rooms"); // "rooms" | "banquets"
@@ -67,7 +35,7 @@ export default function AdminRoomBanquet() {
       {activeTab === "rooms" ? (
         <AdminRooms embedded />
       ) : (
-        <BanquetsPlaceholder />
+        <AdminBanquets embedded />
       )}
     </div>
   );

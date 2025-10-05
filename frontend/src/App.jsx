@@ -11,12 +11,14 @@ import AdminLogin from "./pages/AdminLogin.jsx";
 import ProtectedRoute from "./routes/ProtectedRoute.jsx";
 
 import AdminLayout from "./layouts/AdminLayout.jsx";
-import AdminRoomBanquet from "./pages/AdminRoomBanquet.jsx";   // ✅ ใช้อันใหม่
+import AdminRoomBanquet from "./pages/AdminRoomBanquet.jsx";
 import AdminBookings from "./pages/AdminBookings.jsx";
 import AdminDashboard from "./pages/AdminDashboard.jsx";
 
 import HomeFull from "./pages/HomeFull.jsx";
+import Rooms from "./pages/Rooms.jsx";
 import RoomType from "./pages/RoomType.jsx";
+import Banquet from "./pages/Banquet.jsx";
 
 /* ----------------- Temporary placeholder ----------------- */
 function AdminPayments() {
@@ -51,18 +53,45 @@ export default function App() {
       {/* Public */}
       <Route path="/" element={<PublicHome />} />
 
+      {/* หน้า “ดูทั้งหมด”: รายการห้องทั้งหมด */}
       <Route
-        path="/home"
+        path="/discover"
         element={
           <>
             <Navbar />
             <HomeFull />
+            <Contact />
             <Footer />
           </>
         }
       />
 
-      {/* ถ้า RoomType มี header/footer ในตัวอยู่แล้ว ไม่ต้องห่อเพิ่ม */}
+      <Route
+        path="/rooms"
+        element={
+          <>
+            <Navbar />
+            <Rooms />
+            <Contact />
+            <Footer />
+          </>
+        }
+      />
+
+      {/* ห้องจัดเลี้ยง (placeholder) */}
+      <Route
+        path="/banquet"
+        element={
+          <>
+            <Navbar />
+            <Banquet />
+            <Contact />
+            <Footer />
+          </>
+        }
+      />
+
+      {/* รายละเอียดห้องเดี่ยว */}
       <Route path="/rooms/:slug" element={<RoomType />} />
 
       {/* Admin Auth */}
@@ -71,14 +100,15 @@ export default function App() {
       {/* Admin Area (protected) */}
       <Route path="/admin" element={<ProtectedRoute />}>
         <Route element={<AdminLayout />}>
-          {/* Dashboard เป็น index */}
           <Route index element={<AdminDashboard />} />
-          {/* ✅ ใช้หน้าที่รวมแท็บ rooms/banquets */}
-          <Route path="rooms" element={<AdminRoomBanquet />} /> 
+          <Route path="rooms" element={<AdminRoomBanquet />} />
           <Route path="payments" element={<AdminPayments />} />
           <Route path="bookings" element={<AdminBookings />} />
         </Route>
       </Route>
+
+      {/* กันลิงก์เก่าที่อาจยังชี้ /home อยู่ */}
+      <Route path="/home" element={<Navigate to="/" replace />} />
 
       {/* 404 -> home */}
       <Route path="*" element={<Navigate to="/" replace />} />

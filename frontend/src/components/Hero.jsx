@@ -1,4 +1,5 @@
 import React from 'react'
+import { Link } from 'react-router-dom'         // ⬅️ เพิ่มบรรทัดนี้
 import hero from '../assets/hero.jpg' 
 
 export default function Hero(){
@@ -12,7 +13,8 @@ export default function Hero(){
           ความเงียบสงบ… คือของขวัญที่แท้จริง<br/>
           สัมผัสบรรยากาศส่วนตัวท่ามกลางธรรมชาติ
         </p>
-        <button className="heroBtn">จองเลย</button>
+        {/* <button className="heroBtn">จองเลย</button> */}
+        <Link to="/rooms" className="heroBtn">จองเลย</Link>
       </div>
     </section>
   )
