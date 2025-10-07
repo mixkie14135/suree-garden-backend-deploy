@@ -218,7 +218,7 @@ export default function RoomEditModal({ open, room, onClose, onSave }){
 
         <div className="modalActions">
           <button className="btnLine" onClick={onClose}>ยกเลิก</button>
-          <button className="btnPrimary" onClick={submit}>ยืนยัน</button>
+          <button className="adminBtnPrimary" onClick={submit}>ยืนยัน</button>
         </div>
       </div>
     </div>

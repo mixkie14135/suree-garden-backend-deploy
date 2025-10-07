@@ -12,6 +12,7 @@ export default function Navbar() {
         <NavLink className="brand" to="/">
           <img src={logo} alt="Suree Garden Resort" />
         </NavLink>
+        
 
         <form className="searchBar" role="search" onSubmit={onSearch}>
           <input placeholder="ตรวจสอบสถานะวันจองหรือค้นหาการจอง" />

@@ -131,38 +131,7 @@ body{
   .section{ padding:32px 0; }
 }
 
-/* ========== ADMIN LAYOUT ========== */
-:root{
-  --admin-bg:#f3f4f6;
-  --admin-hover:#eaf1d8;
-}
-.admin{ display:flex; min-height:100vh; background:var(--admin-bg); }
-.sidebar{
-  width:240px; background:#fff; border-right:1px solid var(--line);
-  position:sticky; top:0; height:100vh;
-}
-.brandAdmin{ display:flex; gap:10px; align-items:center; padding:16px; border-bottom:1px solid var(--line); }
-.brandAdmin img{ width:42px; height:42px; object-fit:cover; border-radius:50%; }
-.brandAdminText{ line-height:1; display:flex; flex-direction:column; font-weight:800; color:#314; }
-.brandAdminText small{ font-size:10px; letter-spacing:1px; color:#7b7b7b; }
 
-.menu{ padding:8px; display:flex; flex-direction:column; gap:6px; }
-.menu-item{
-  display:flex; align-items:center; gap:12px;
-  padding:12px 14px; margin:0 6px; border-radius:10px;
-  color:#263238; text-decoration:none; font-weight:700; border:1px solid transparent;
-}
-.menu-item .mi-ic{ width:20px; height:20px; display:inline-flex; align-items:center; justify-content:center; }
-.menu-item .mi-ic svg{ width:18px; height:18px; fill:currentColor; }
-
-.menu-item:hover{ background:var(--admin-hover); border-color:#dfe7c8; }
-.menu-item.active{ background:#7c813e; color:#fff; }
-.menu-item.active svg{ fill:#fff; }
-
-.menu-item.logout{ margin-top:auto; color:#7a1b1b; }
-.menu-item.logout:hover{ background:#fdeaea; border-color:#f7caca; }
-
-.adminContent{ flex:1; padding:20px 24px; }
 
 /* ==== HOME FULL ===== */
 .homeHero{ position:relative; height:550px; overflow:hidden; }

@@ -80,309 +80,216 @@
   text-align:center; color:#789; font-size:12px; margin-top:12px;
 }
 
-/* ========== HEADER / TOOLBAR ========== */
-.adminPage .adminPageHeader{
-  display:flex; align-items:center; justify-content:space-between;
-  margin-bottom:16px;
-  /* background:#ffffff; border:1px solid var(--line); border-radius:12px; */
-}
-.adminPage .adminPageHeader h2{
-  margin:0; display:flex; align-items:center; font-size:20px;
-}
-/* .headIcon{ display:inline-flex; width:22px; height:22px; }
-.headIcon svg{ width:22px; height:22px; fill:#6b7a46; } */
+/* ========== ADMIN LAYOUT (scope) ========== */
+.admin {
+  --admin-bg:#f3f4f6;
+  --admin-hover:#eaf1d8;
 
-.tools{ display:flex; align-items:center; gap:12px; }
-.filter{ display:inline-flex; align-items:center; gap:8px; color:#666; }
-.filter select{ border:1px solid var(--line); border-radius:8px; padding:6px 8px; background:#fff; }
-
-/* Buttons */
-.btnPrimary{
-  background:#7c813e; color:#fff; border:1px;
-  padding:10px 14px; border-radius:10px; font-weight:800; cursor:pointer;
+  display:flex;
+  min-height:100vh;
+  background:var(--admin-bg);
 }
-.btnPrimary:hover{ background:var(--accent-700); }
-.btnIc{ font-weight:900; margin-right:6px; }
+.admin .sidebar{
+  width:240px; background:#fff; border-right:1px solid var(--line);
+  position:sticky; top:0; height:100vh;
+}
+.admin .brandAdmin{ display:flex; gap:10px; align-items:center; padding:16px; border-bottom:1px solid var(--line); }
+.admin .brandAdmin img{ width:42px; height:42px; object-fit:cover; border-radius:50%; }
+.admin .brandAdminText{ line-height:1; display:flex; flex-direction:column; font-weight:800; color:#314; }
+.admin .brandAdminText small{ font-size:10px; letter-spacing:1px; color:#7b7b7b; }
 
-/* ช่องค้นหาใน header ให้สูงพอดี */
-.adminPage .adminPageHeader input[type="text"]{ height:36px; }
+.admin .menu{ padding:8px; display:flex; flex-direction:column; gap:6px; }
+.admin .menu-item{
+  display:flex; align-items:center; gap:12px;
+  padding:12px 14px; margin:0 6px; border-radius:10px;
+  color:#263238; text-decoration:none; font-weight:700; border:1px solid transparent;
+}
+.admin .menu-item .mi-ic{ width:20px; height:20px; display:inline-flex; align-items:center; justify-content:center; }
+.admin .menu-item .mi-ic svg{ width:18px; height:18px; fill:currentColor; }
+.admin .menu-item:hover{ background:var(--admin-hover); border-color:#dfe7c8; }
+.admin .menu-item.active{ background:#7c813e; color:#fff; }
+.admin .menu-item.active svg{ fill:#fff; }
+.admin .menu-item.logout{ margin-top:auto; color:#7a1b1b; }
+.admin .menu-item.logout:hover{ background:#fdeaea; border-color:#f7caca; }
+
+.admin .adminContent{ flex:1; padding:20px 24px; }
+
+/* ========== HEADER / TOOLBAR (scope) ========== */
+.admin .adminPage .adminPageHeader{ display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+.admin .adminPage .adminPageHeader h2{ margin:0; display:flex; align-items:center; font-size:20px; }
+
+.admin .tools{ display:flex; align-items:center; gap:12px; }
+.admin .filter{ display:inline-flex; align-items:center; gap:8px; color:#666; }
+.admin .filter select{ border:1px solid var(--line); border-radius:8px; padding:6px 8px; background:#fff; }
+
+/* Buttons (admin only) */
+.admin .btnPrimary{ background:#7c813e; color:#fff; border:1px; padding:10px 14px; border-radius:10px; font-weight:800; cursor:pointer; }
+.admin .btnPrimary:hover{ background:var(--accent-700); }
+.admin .btnIc{ font-weight:900; margin-right:6px; }
+.admin .btnText{ background:#fff; border:1px solid var(--line); border-radius:10px; padding:10px 14px; font-weight:800; cursor:pointer; color:#444; }
+.admin .btnText:hover{ background:#f4f4f4; }
+
+/* ช่องค้นหาบนหัว admin */
+.admin .adminPage .adminPageHeader input[type="text"]{ height:36px; }
 
 /* =========================================================
-   TABLE (ADMIN ROOMS)
-   โครง: [ห้อง] [ประเภท] [จำนวนคน] [ราคา/คืน] [สถานะ] [รูปภาพ]
+   TABLE / LIST (scope)
    ========================================================= */
-.card{ background:#fff; border:1px solid var(--line); border-radius:12px; }
-.table{ overflow:auto; }            /* <— ป้องกันล้นขอบขวา */
+.admin .card{ background:#fff; border:1px solid var(--line); border-radius:12px; }
+.admin .table{ overflow:auto; }
 
-.adminRooms .tHead,
-.adminRooms .tRow{
+.admin .adminRooms .tHead,
+.admin .adminRooms .tRow{
   display:grid;
-  /* 6 คอลัมน์ตาม JSX ปัจจุบัน */
-  grid-template-columns: 160px 1.2fr 90px 120px 120px 160px;
+  grid-template-columns:160px 1.2fr 90px 120px 120px 160px;
   gap:16px; padding:14px 18px; align-items:center;
 }
-.adminRooms .tHead{
-  position:sticky; top:0; z-index:5;
-  background:#f6f8ee; color:#6b6b6b; font-weight:800;
-}
-.adminRooms .tRow{
-  border-top:1px solid var(--line);
-  min-height:84px;
-}
-.adminRooms .tRow:hover{ background:#fafcf4; }
+.admin .adminRooms .tHead{ position:sticky; top:0; z-index:5; background:#f6f8ee; color:#6b6b6b; font-weight:800; }
+.admin .adminRooms .tRow{ border-top:1px solid var(--line); min-height:84px; }
+.admin .adminRooms .tRow:hover{ background:#fafcf4; }
 
-/* ห้อง (ปุ่มแก้ไข + ชื่อห้อง) */
-.cell--room{ position:relative; display:grid; grid-template-columns:40px 1fr; gap:10px; align-items:center; }
-.roomEdit{
-  width:32px; height:32px; border-radius:8px; border:1px solid var(--line);
-  display:inline-flex; align-items:center; justify-content:center;
-  background:#fff; cursor:pointer;
-}
-.roomEdit:hover{ background:var(--admin-hover); }
-.roomEdit svg{ width:18px; height:18px; fill:#455; }
+.admin .cell--room{ position:relative; display:grid; grid-template-columns:40px 1fr; gap:10px; align-items:center; }
+.admin .roomEdit{ width:32px; height:32px; border-radius:8px; border:1px solid var(--line); display:inline-flex; align-items:center; justify-content:center; background:#fff; cursor:pointer; }
+.admin .roomEdit:hover{ background:var(--admin-hover); }
+.admin .roomEdit svg{ width:18px; height:18px; fill:#455; }
 
-.roomMeta{ display:flex; align-items:baseline; gap:8px; min-width:0; }
-.roomNo{ font-weight:900; font-size:16px; color:#2b2b2b; white-space:nowrap; }
+.admin .roomMeta{ display:flex; align-items:baseline; gap:8px; min-width:0; }
+.admin .roomNo{ font-weight:900; font-size:16px; color:#2b2b2b; white-space:nowrap; }
 
-/* เมนูย่อยใต้ปุ่มดินสอ */
-.actionMenu{
+.admin .actionMenu{
   position:absolute; left:0; top:42px; z-index:30;
   background:#fff; border:1px solid var(--line); border-radius:10px;
   box-shadow:0 10px 22px rgba(0,0,0,.12);
   padding:6px; min-width:160px;
 }
-.actionMenu button{
-  display:block; width:100%; text-align:left;
-  background:#fff; border:0; border-radius:8px;
+.admin .actionMenu button{
+  display:block; width:100%; text-align:left; background:#fff; border:0; border-radius:8px;
   padding:8px 10px; font-weight:800; color:#333; cursor:pointer;
 }
-.actionMenu button:hover{ background:var(--admin-hover); }
-.actionMenu .danger{ color:#9c1f1f; }
-.actionMenu .danger:hover{ background:#ffecec; }
+.admin .actionMenu button:hover{ background:var(--admin-hover); }
+.admin .actionMenu .danger{ color:#9c1f1f; }
+.admin .actionMenu .danger:hover{ background:#ffecec; }
 
-/* alignment ทั่วไป */
-.center{ text-align:center; }
-.right{ text-align:right; }
+.admin .center{ text-align:center; }
+.admin .right{ text-align:right; }
 
-/* ราคา/คืน (แท็ก) */
-.priceTag{
-  display:inline-block; font-weight:800;
-  background:#f1f4e6; border:1px solid #dde6c8; border-radius:10px;
-  padding:6px 10px;
-}
-.priceTag small{ font-weight:600; color:#666; }
+.admin .priceTag{ display:inline-block; font-weight:800; background:#f1f4e6; border:1px solid #dde6c8; border-radius:10px; padding:6px 10px; }
+.admin .priceTag small{ font-weight:600; color:#666; }
 
-/* Pill สถานะ */
-.pill{ display:inline-block; padding:6px 10px; border-radius:999px; font-weight:800; font-size:13px; }
-.pill.ok{ background:#dff2d9; color:#2f7a34; }
-.pill.bad{ background:#ffd8d8; color:#9c1f1f; }
+.admin .pill{ display:inline-block; padding:6px 10px; border-radius:999px; font-weight:800; font-size:13px; }
+.admin .pill.ok{ background:#dff2d9; color:#2f7a34; }
+.admin .pill.bad{ background:#ffd8d8; color:#9c1f1f; }
 
-/* รูปตัวอย่าง */
-.cell--thumb{ display:flex; align-items:center; justify-content:flex-end; }
-.thumbMini{
-  position:relative; width:86px; height:56px;
-  border:1px solid var(--line); border-radius:8px; overflow:hidden; background:#fafafa;
-}
-.thumbMini img{ width:100%; height:100%; object-fit:cover; display:block; }
-.thumbMini .count{
-  position:absolute; right:6px; bottom:6px; padding:2px 6px;
-  background:rgba(0,0,0,.6); color:#fff; font-size:11px; border-radius:999px;
-}
+.admin .cell--thumb{ display:flex; align-items:center; justify-content:flex-end; }
+.admin .thumbMini{ position:relative; width:86px; height:56px; border:1px solid var(--line); border-radius:8px; overflow:hidden; background:#fafafa; }
+.admin .thumbMini img{ width:100%; height:100%; object-fit:cover; display:block; }
+.admin .thumbMini .count{ position:absolute; right:6px; bottom:6px; padding:2px 6px; background:rgba(0,0,0,.6); color:#fff; font-size:11px; border-radius:999px; }
 
-/* ========== RESPONSIVE ========== */
-@media (max-width: 1280px){
-  .adminRooms .tHead, .adminRooms .tRow{
-    grid-template-columns: 150px 1.2fr 90px 120px 120px 150px;
+/* Responsive table */
+@media (max-width:1280px){
+  .admin .adminRooms .tHead,
+  .admin .adminRooms .tRow{
+    grid-template-columns:150px 1.2fr 90px 120px 120px 150px;
   }
 }
-@media (max-width: 1080px){
-  /* ซ่อนคอลัมน์รูปภาพเมื่อพื้นที่แคบ */
-  .adminRooms .tHead > :nth-last-child(1),
-  .adminRooms .tRow  > :nth-last-child(1){ display:none; }
-  .adminRooms .tHead, .adminRooms .tRow{
-    grid-template-columns: 150px 1.3fr 90px 130px 120px;
+@media (max-width:1080px){
+  .admin .adminRooms .tHead > :nth-last-child(1),
+  .admin .adminRooms .tRow  > :nth-last-child(1){ display:none; }
+  .admin .adminRooms .tHead, .admin .adminRooms .tRow{
+    grid-template-columns:150px 1.3fr 90px 130px 120px;
   }
 }
-@media (max-width: 900px){
-  /* ซ่อน “ประเภท” เพิ่ม เพื่อให้อยู่ในบรรทัดเดียว */
-  .adminRooms .tHead > :nth-child(2),
-  .adminRooms .tRow  > :nth-child(2){ display:none; }
-  .adminRooms .tHead, .adminRooms .tRow{
-    grid-template-columns: 150px 90px 120px 120px;
+@media (max-width:900px){
+  .admin .adminRooms .tHead > :nth-child(2),
+  .admin .adminRooms .tRow  > :nth-child(2){ display:none; }
+  .admin .adminRooms .tHead, .admin .adminRooms .tRow{
+    grid-template-columns:150px 90px 120px 120px;
   }
 }
 
-/* ========== MODAL ========== */
-.modalOverlay{
+/* ========== MODAL (scope) ========== */
+.admin .modalOverlay{
   position:fixed; inset:0; background:rgba(0,0,0,.35);
   display:flex; align-items:center; justify-content:center; z-index:2000;
 }
-.modalCard{
+.admin .modalCard{
   width:min(960px, 92vw); max-height:86vh; overflow:auto;
   background:#fff; border-radius:16px; box-shadow:0 20px 60px rgba(0,0,0,.25); padding:22px;
 }
-.modalTitle{ margin:0 0 14px; font-size:20px; font-weight:900; color:#2b2b2b; }
+.admin .modalTitle{ margin:0 0 14px; font-size:20px; font-weight:900; color:#2b2b2b; }
 
-/* layout ฟอร์มซ้าย + แกลเลอรีขวา */
-.modalGrid{ display:grid; grid-template-columns: 1.1fr 1fr; gap:24px; }
-.modalForm .fRow{ margin-bottom:14px; }
-.modalForm .fRow.two{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-.modalForm label{ display:block; font-weight:700; margin-bottom:6px; color:#444; }
-.modalForm input[type="text"],
-.modalForm input[type="number"],
-.modalForm select{
+.admin .modalGrid{ display:grid; grid-template-columns:1.1fr 1fr; gap:24px; }
+.admin .modalForm .fRow{ margin-bottom:14px; }
+.admin .modalForm .fRow.two{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.admin .modalForm label{ display:block; font-weight:700; margin-bottom:6px; color:#444; }
+.admin .modalForm input[type="text"],
+.admin .modalForm input[type="number"],
+.admin .modalForm select{
   width:100%; border:1px solid var(--line); border-radius:10px; padding:10px 12px; background:#fff;
 }
 
-.modalGallery .gTitle{ font-weight:800; margin:8px 0 8px; color:#444; }
-.galleryGrid{ display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:10px; }
-.thumb{ position:relative; border:1px solid var(--line); border-radius:10px; overflow:hidden; }
-.thumb img{ width:100%; height:130px; object-fit:cover; display:block; }
-.thumbDel{
+.admin .modalGallery .gTitle{ font-weight:800; margin:8px 0 8px; color:#444; }
+.admin .galleryGrid{ display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:10px; }
+.admin .thumb{ position:relative; border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+.admin .thumb img{ width:100%; height:130px; object-fit:cover; display:block; }
+.admin .thumbDel{
   position:absolute; top:6px; right:6px; width:28px; height:28px; line-height:26px;
   border-radius:999px; border:1px solid #e5e5e5; background:#fff; cursor:pointer; font-weight:900;
 }
 
-.modalActions{ display:flex; justify-content:flex-end; gap:12px; margin-top:10px; }
-.btnText{
-  background:#fff; border:1px solid var(--line); border-radius:10px;
-  padding:10px 14px; font-weight:800; cursor:pointer; color:#444;
-}
-.btnText:hover{ background:#f4f4f4; }
+.admin .modalActions{ display:flex; justify-content:flex-end; gap:12px; margin-top:10px; }
 
 /* responsive modal */
-@media (max-width: 880px){
-  .modalGrid{ grid-template-columns:1fr; }
-  .galleryGrid{ grid-template-columns:repeat(2, minmax(0, 1fr)); }
+@media (max-width:880px){
+  .admin .modalGrid{ grid-template-columns:1fr; }
+  .admin .galleryGrid{ grid-template-columns:repeat(2, minmax(0, 1fr)); }
 }
 
-/* ---- DASHBOARD: force white cards ---- */
-.adminContent .bg-white {
+/* ---- DASHBOARD: force white cards inside admin ---- */
+.admin .bg-white{
   background:#fff !important;
   border:1px solid var(--line);
   border-radius:12px;
   box-shadow:0 6px 18px rgba(0,0,0,.06);
 }
 
-/* ===== Dashboard empty pattern ===== */
-.adminEmpty { padding:0; }
-.emptyBox{
-  padding:16px 18px; background:#fff; border:1px solid var(--line);
-  border-radius:12px; color:#6b6b6b; font-weight:700;
-}
-.emptyBox p{ margin:0; }
-.quickRow{ margin-top:10px; display:flex; gap:10px; }
+/* SweetAlert2 on top of admin modals */
+.swal2-container{ z-index:10000 !important; }
+.swal2-popup{ border-radius:14px; }
 
-
-/* --- SweetAlert2 on top of app modals --- */
-.swal2-container{
-  z-index: 10000 !important;   /* สูงกว่า .modalOverlay (2000) */
-}
-.swal2-popup{
-  border-radius: 14px;
+/* Textarea in room modal */
+.admin .modalForm .textarea{
+  width:100%; min-height:120px; border:1px solid var(--line);
+  border-radius:10px; padding:10px 12px; background:#fff; font:inherit; line-height:1.4; resize:vertical;
 }
 
-/* --- Textarea in room modal --- */
-.modalForm .textarea{
-  width: 100%;
-  min-height: 120px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 10px 12px;
-  background: #fff;
-  font: inherit;
-  line-height: 1.4;
-  resize: vertical;            /* ให้ยืดสูงได้ตามต้องการ */
+/* ========== Tabs + Toolbar (scope) ========== */
+.admin .tabsWrapper{ margin-bottom:-1px; }
+.admin .tabs{ display:flex; gap:0; }
+.admin .tab{
+  padding:12px 24px; border:1px solid var(--line); border-bottom:none; background:#f6f8ee;
+  cursor:pointer; font-weight:700; color:#555; border-radius:12px 12px 0 0;
 }
+.admin .tab.active{ background:#7c813e; color:#fff; border-bottom:2px solid #fff; position:relative; top:1px; }
 
-/* Tabs wrapper */
-.tabsWrapper {
-  margin-bottom: -1px; /* ให้แท็บต่อเนื่องกับ toolbar */
+.admin .toolbar{
+  display:grid; grid-template-columns:1fr auto; align-items:center; gap:16px;
+  padding:14px 16px; background:#fff; border:1px solid var(--line);
+  border-top:none; border-radius:0 12px 12px 12px; margin-bottom:10px;
 }
-.tabs {
-  display: flex;
-  gap: 0;
+.admin .toolLeft{ display:flex; flex-direction:column; gap:8px; }
+.admin .toolbar .info{ font-weight:700; color:#444; display:flex; align-items:center; gap:8px; }
+.admin .toolbar .search input{
+  width:380px; max-width:100%;
+  border:1px solid var(--line); border-radius:10px; padding:10px 12px; background:#fff;
 }
-.tab {
-  padding: 12px 24px;
-  border: 1px solid var(--line);
-  border-bottom: none;
-  background: #f6f8ee;
-  cursor: pointer;
-  font-weight: 700;
-  color: #555;
-  border-radius: 12px 12px 0 0;
-}
-.tab.active {
-  background: #7c813e;
-  color: #fff;
-  border-bottom: 2px solid #fff;
-  position: relative;
-  top: 1px;
-}
+.admin .toolbar .controls{ display:flex; align-items:center; gap:10px; }
+.admin .toolbar select{ border:1px solid var(--line); border-radius:8px; padding:6px 10px; background:#fff; }
 
-/* ========== TABS + TOOLBAR ========== */
-/* (ส่วน tabs ที่มีอยู่แล้วคงเดิมได้) */
-
-/* Toolbar: ซ้ายเป็นกองแนวตั้ง (info + search), ขวาเป็นปุ่ม/ตัวกรอง */
-.toolbar{
-  display:grid;
-  grid-template-columns: 1fr auto;
-  align-items:center;
-  gap:16px;
-  padding:14px 16px;
-  background:#fff;
-  border:1px solid var(--line);
-  border-top:none;
-  border-radius:0 12px 12px 12px;
-  margin-bottom:10px;
-}
-
-.toolLeft{
-  display:flex;
-  flex-direction:column; /* info อยู่บน, search อยู่ล่าง */
-  gap:8px;
-}
-
-.toolbar .info{
-  font-weight:700; color:#444;
-  display:flex; align-items:center; gap:8px;
-}
-
-.toolbar .search input{
-  width: 380px;           /* ปรับให้กว้างกำลังดี เหมือนใน Figma */
-  max-width: 100%;
-  border:1px solid var(--line);
-  border-radius:10px;
-  padding:10px 12px;
-  background:#fff;
-}
-
-.toolbar .controls{
-  display:flex; align-items:center; gap:10px;
-}
-
-.toolbar select{
-  border:1px solid var(--line);
-  border-radius:8px;
-  padding:6px 10px;
-  background:#fff;
-}
-
-
-/* Responsive: ย่อแล้วให้ซ้อนเป็น 1 คอลัมน์ */
-@media (max-width: 900px){
-  .toolbar{
-    grid-template-columns: 1fr;
-    gap:12px;
-  }
-  .toolbar .controls{
-    justify-content:flex-start;
-    flex-wrap:wrap;
-    gap:8px;
-  }
-  .toolbar .search input{
-    width:100%;
-  }
+/* Responsive toolbar */
+@media (max-width:900px){
+  .admin .toolbar{ grid-template-columns:1fr; gap:12px; }
+  .admin .toolbar .controls{ justify-content:flex-start; flex-wrap:wrap; gap:8px; }
+  .admin .toolbar .search input{ width:100%; }
 }
 
