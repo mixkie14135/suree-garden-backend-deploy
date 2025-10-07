@@ -132,3 +132,17 @@ export const banquetApi = {
     return apiDelete(`/banquets/${banquetId}/images/${imageId}`);
   },
 };
+
+/* ===================== Room API (PUBLIC) ===================== */
+export const roomApi = {
+  list(params = {}) {
+    return apiGet("/rooms", params);
+  },
+  // ใช้เส้นทาง /room-types/slug/:slug ให้ตรงกับ backend ที่คุณเรียกใน Postman
+  typeBySlug(slug) {
+    return apiGet(`/room-types/slug/${encodeURIComponent(slug)}`);
+  },
+  listTypes() {
+    return apiGet("/room-types");
+  },
+};

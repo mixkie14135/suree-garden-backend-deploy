@@ -9,6 +9,7 @@ const {
   deleteRoom,
   getRoomTypes,
   createRoomType,
+  getRoomTypeBySlug,
 } = require('../room/room.controller.js');
 
 const router = express.Router();
@@ -28,6 +29,9 @@ router.delete('/rooms/:id', deleteRoom);
 // ประเภทห้อง
 router.get('/room-types', getRoomTypes);
 router.post('/room-types', createRoomType);
+router.get('/room-types/:slug', getRoomTypeBySlug);
+router.get('/room-types/slug/:slug', getRoomTypeBySlug);
+
 
 
 

@@ -42,7 +42,7 @@ exports.getRooms = async (req, res) => {
         where,
         skip,
         take: limit,
-        orderBy: { room_id: 'desc' },
+        orderBy: { room_id: 'asc' },
         include: includeObj,
       }),
       prisma.room.count({ where }),
@@ -304,5 +304,41 @@ exports.createRoomType = async (req, res) => {
     res.status(201).json({ status: 'ok', data: created });
   } catch (err) {
     res.status(500).json({ status: 'error', message: err.message });
+  }
+};
+
+/**
+ * GET /api/room-types/:slug
+ * ดึงรายละเอียดประเภทห้องด้วย slug (ใช้สำหรับหน้า /rooms/:slug)
+ */
+exports.getRoomTypeBySlug = async (req, res) => {
+  try {
+    const slug = String(req.params.slug || '').trim().toLowerCase();
+    if (!slug) {
+      return res.status(400).json({ message: 'slug is required' });
+    }
+
+    const type = await prisma.room_type.findUnique({
+      where: { slug },
+      // เลือกเฉพาะฟิลด์ที่หน้า public ต้องใช้ (ขยายได้ภายหลัง)
+      select: {
+        room_type_id: true,
+        slug: true,
+        type_name: true,
+        type_name_en: true,
+        description: true,
+        amenities: true,
+        created_at: true,
+        updated_at: true,
+      },
+    });
+
+    if (!type) {
+      return res.status(404).json({ message: 'Room type not found' });
+    }
+
+    return res.json(type);
+  } catch (err) {
+    return res.status(500).json({ status: 'error', message: err.message });
   }
 };
