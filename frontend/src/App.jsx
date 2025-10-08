@@ -21,6 +21,7 @@ import RoomType from "./pages/RoomType.jsx";
 import Banquet from "./pages/Banquet.jsx";
 import BookingRoom from "./pages/bookings/bookingroom.jsx"; // ✅ เตรียมสร้างหน้านี้
 import BookingRoomConfirm from "./pages/bookings/BookingRoomConfirm.jsx";
+import BookingPayment from "./pages/bookings/BookingPayment.jsx";
 
 /* ----------------- Temporary placeholder ----------------- */
 function AdminPayments() {
@@ -122,6 +123,12 @@ export default function App() {
         path="/bookings/bookingroom/:id/confirm" 
         element={<BookingRoomConfirm />} 
       />
+
+      // ✅ ตรงกับ navigate(`/bookings/payment?code=...`)
+      <Route path="/bookings/payment" 
+      element={<BookingPayment />} 
+      />
+
 
       {/* 404 -> home */}
       <Route path="*" element={<Navigate to="/" replace />} />

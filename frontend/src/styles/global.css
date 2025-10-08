@@ -263,15 +263,12 @@ body{
 }
 
 /* ให้ทุกคอลัมน์มีเส้นคั่นขวา ยกเว้นคอลัมน์สุดท้าย */
-/* .bkBar > :where(.bkCell,.bkPriceCell,.bkBarGo){ border-right:1px solid var(--line); }
-.bkBar > :where(.bkCell,.bkPriceCell,.bkBarGo):last-child{ border-right:0; } */
 .bkBar > :where(.bkCell,.bkBarGo){ border-right:1px solid var(--line); }
 .bkBar > :where(.bkCell,.bkBarGo):last-child{ border-right:0; }
 
 .bkCell{ padding:14px 16px; background:#fff; }
 .bkLabel{ font-size:13px; color:#666; margin-bottom:6px; }
-.bkTitle{ font-size:18px; font-weight:800; color:#1f1f1f; line-height:1.1; }
-.bkSub{ color:#6b6b6b; margin-top:4px; }
+
 
 /* input ที่ใช้ในบาร์ */
 .bkInput{
@@ -349,4 +346,132 @@ body{
   .bkCell{ border-right:0; border-bottom:1px solid var(--line); }
   .bkCell:last-child{ border-bottom:0; }
   .bkAmenGrid{ grid-template-columns: repeat(2,minmax(0,1fr)); }
+}
+
+
+/* ============================================================= */
+/* ปุ่มหลักใช้ซ้ำได้ทุกหน้า */
+.btnPrimary{
+  display:inline-flex; align-items:center; gap:8px;
+  background:#7c813e; color:#fff; border:0; border-radius:10px;
+  padding:12px 20px; font-weight:800; font-size:16px;
+  box-shadow:0 8px 18px rgba(111,140,71,.28); cursor:pointer;
+  transition:transform .12s ease, box-shadow .12s ease, filter .12s ease;
+}
+.btnPrimary:hover{ transform:translateY(-1px); box-shadow:0 8px 20px rgba(0,0,0,.12); filter:brightness(1.02); }
+
+/* ปุ่มขอบบาง (ยกเลิก/ย้อนกลับ) */
+.btnGhost{
+  display:inline-flex; align-items:center; gap:8px;
+  background:#fff; color:#333; border:1px solid var(--line);
+  border-radius:10px; padding:10px 14px; font-weight:800;
+  transition:all .2s ease;
+}
+.btnGhost:hover{
+  color:#111; border-color:var(--accent-700);
+  box-shadow:0 8px 20px rgba(0,0,0,.08); transform:translateY(-1px);
+}
+
+/* ===== Booking Payment layout ===== */
+.bpGrid {
+  display:grid; grid-template-columns:360px 1fr; gap:28px;
+}
+.bpCard {
+  border:1px solid var(--line); border-radius:8px; padding:16px; background:#fff;
+}
+.bpCardTitle { margin:0 0 12px; font-weight:800; }
+
+/* Summary list */
+.bpList { margin:0; padding:0; }
+.bpList > div {
+  display:flex; justify-content:space-between; gap:12px;
+  padding:8px 0; border-bottom:1px solid var(--line);
+}
+.bpList dt { color:#666; }
+.bpList dd { margin:0; font-weight:700; text-align:right; }
+
+/* Deadline/countdown */
+.bpDeadline { margin-top:12px; display:grid; grid-template-columns:auto 1fr; gap:6px 10px; align-items:center; }
+.bpDeadlineTime { font-weight:800; }
+.bpCountdown { grid-column:1 / -1; font-weight:800; }
+.bpCountdown--over { color:crimson; }
+
+/* Payment account */
+.bpAccount { display:grid; gap:10px; margin:8px 0 16px; }
+.bpAccRow { display:flex; justify-content:space-between; gap:12px; }
+.bpAccRow span { color:#666; }
+
+/* Form fields */
+.bpPayForm { display:grid; gap:12px; }
+.bpField > div { margin-bottom:6px; font-weight:700; }
+.bpNote { font-size:13px; color:#777; margin-top:6px; }
+
+
+/* Responsive */
+@media (max-width:900px){
+  .bpGrid { grid-template-columns:1fr; }
+}
+
+/* ===== Stepper (fixed circle size, line not crossing circles) ===== */
+.stp{
+  position:relative;
+  display:flex;align-items:center;justify-content:space-between;
+  list-style:none;margin:0 0 24px;padding:0;gap:16px;
+}
+.stp-item{ position:relative; flex:1 1 0; text-align:center; }
+
+/* วงกลม: ขนาดคงที่เสมอ และอยู่เหนือเส้นเชื่อม */
+.stp-circle{
+  position:relative;               /* ให้ z-index ทำงาน */
+  z-index:2;                       /* วางเหนือเส้น */
+  width:44px;height:44px;border-radius:50%;
+  margin:0 auto 8px;
+  display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-size:18px;color:#fff;
+  background:#ddd;
+  transition:background .25s ease, color .25s ease;
+  box-shadow:none !important;      /* ตัดเงาที่เคยดูเหมือนใหญ่กว่า */
+}
+
+/* ป้ายชื่อ */
+.stp-label{ color:#999;font-weight:700;transition:color .25s ease; }
+
+/* เส้นเชื่อม (พื้นเทา + สีเขียว) — เริ่มที่ "ขอบ" วงกลม ไม่ใช่กลางวงกลม */
+.stp-line,.stp-lineFill{
+  position:absolute; top:22px; height:4px; border-radius:2px; content:""; display:block;
+  /* ลดความยาวด้านซ้าย/ขวาออกข้างละ 22px (ครึ่งเส้นผ่านศูนย์กลาง 44px) */
+  left:calc(-50% + 2px); right:calc(50% + 2px);
+  z-index:0;
+}
+.stp-item:first-child .stp-line,
+.stp-item:first-child .stp-lineFill{ display:none; }
+
+.stp-line{ background:#e1e1e1; }  /* เทานุ่มขึ้น */
+
+.stp-lineFill{
+  background:linear-gradient(90deg,#a7bf76,#7c813e);
+  transform-origin:left center; transform:scaleX(0);
+}
+
+/* สถานะ */
+.stp-item.is-completed .stp-circle,
+.stp-item.is-active    .stp-circle{ background:#7c813e; }
+
+.stp-item.is-completed .stp-label{ color:#1f1f1f; font-weight:800; }
+.stp-item.is-active    .stp-label { color:#111; font-weight:800; }
+
+/* เล่นแอนิเมชันไหลเฉพาะเส้นของ step ที่ผ่านแล้ว */
+.stp--animate .stp-item.is-completed .stp-lineFill,
+.stp--animate .stp-item.is-active .stp-lineFill{
+  animation:stpFlow .9s ease forwards;
+}
+@keyframes stpFlow{ 
+  from{transform:scaleX(0)} 
+  to{transform:scaleX(1)} }
+
+/* มือถือ: ซ่อนเส้นเพื่อกันซ้อนเลย์เอาต์ */
+@media (max-width:700px){
+  .stp{flex-direction:column; align-items:flex-start; gap:10px;}
+  .stp-item{width:100%; text-align:left;}
+  .stp-line,.stp-lineFill{ display:none; }
 }

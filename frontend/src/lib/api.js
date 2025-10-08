@@ -164,3 +164,31 @@ export const bookingApi = {
     return apiPost("/reservations/room", payload);
   },
 };
+
+
+
+
+// สถานะการจองจาก reservation_code
+export const reservationApi = {
+  getStatusByCode(code) {
+    return apiGet("/reservations/room/status", { code });
+  },
+};
+
+// ---- Payments (match backend) ----
+export const paymentApi = {
+  async uploadRoomSlip({ reservation_code, amount, file }) {
+    const fd = new FormData();
+    fd.append("reservation_code", reservation_code);
+    if (amount != null) fd.append("amount", String(amount));
+    if (file) fd.append("slip", file, file.name); // <<< field name ต้องเป็น 'slip'
+
+    const res = await fetch(`${API_BASE}/payments/room/upload-slip`, { // <<< path ต้องตรง
+      method: "POST",
+      credentials: "include",
+      headers: { ...authHeader() }, // อย่าเซ็ต 'Content-Type' เอง ปล่อยให้ browser กำหนด multipart boundary
+      body: fd,
+    });
+    return handle(res);
+  },
+};

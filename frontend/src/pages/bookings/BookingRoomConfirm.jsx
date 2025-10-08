@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import Navbar from "../../components/Navbar";
+import Stepper from "../../components/Stepper";
 import { roomApi, bookingApi, fileUrl } from "../../lib/api";
 
 export default function BookingRoomConfirm() {
@@ -20,11 +21,11 @@ export default function BookingRoomConfirm() {
 
   useEffect(() => {
     let alive = true;
-    // guard ถ้าไม่มีพารามิเตอร์ครบให้ย้อนกลับ
     if (!checkin || !checkout) {
       navigate(`/bookings/bookingroom/${id}`, { replace: true });
       return;
     }
+    setLoading(true);
     roomApi.detail(id, "images,type")
       .then(r => alive && setRoom(r))
       .catch(e => alive && setErr(e.message || "โหลดข้อมูลห้องไม่สำเร็จ"))
@@ -38,10 +39,8 @@ export default function BookingRoomConfirm() {
     return d > 0 ? d : 0;
   }, [checkin, checkout]);
 
-  const total = useMemo(() => {
-    const price = Number(room?.price || 0);
-    return nights * price;
-  }, [nights, room?.price]);
+  const pricePerNight = Number(room?.price || 0);
+  const total = useMemo(() => nights * pricePerNight, [nights, pricePerNight]);
 
   const hero = useMemo(() => {
     const url = room?.room_image?.[0]?.image_url;
@@ -54,6 +53,7 @@ export default function BookingRoomConfirm() {
   async function handleSubmit(e) {
     e.preventDefault();
     if (overCap) { alert(`จำนวนผู้เข้าพักเกินความจุ (สูงสุด ${capacity})`); return; }
+
     const fd = new FormData(e.currentTarget);
     const first_name = (fd.get("first_name") || "").trim();
     const last_name  = (fd.get("last_name") || "").trim();
@@ -67,16 +67,20 @@ export default function BookingRoomConfirm() {
     setErr("");
     setSubmitting(true);
     try {
-      const res = await bookingApi.createReservation({
+      const result = await bookingApi.createRoomReservation({
         room_id: Number(id),
         checkin_date: checkin,
         checkout_date: checkout,
         first_name, last_name, email, phone
       });
-      const code = res?.data?.reservation_code;
-      alert(`จองสำเร็จ! รหัสการจอง: ${code}`);
-      // TODO: คุณจะพาไปหน้า “ชำระเงิน” หรือ “สถานะการจอง” ก็ได้
-      // navigate(`/bookings/status?code=${code}`);
+
+      const rc = result?.data?.reservation_code || result?.reservation_code;
+      const total = result?.data?.total || result?.total;
+
+      navigate(`/bookings/payment?code=${encodeURIComponent(rc)}`, {
+        replace: true,
+        state: { reservation_code: rc, total }
+      });
     } catch (e2) {
       setErr(e2.message || "จองไม่สำเร็จ");
     } finally {
@@ -88,62 +92,59 @@ export default function BookingRoomConfirm() {
     <>
       <Navbar />
       <main className="container" style={{ padding: "28px 0 60px" }}>
-        {/* stepper (เรียบๆ ตาม figma) */}
-        <ol style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:16, margin:"0 0 24px", listStyle:"none", padding:0 }}>
-          {["กรอกข้อมูลการจอง","ชำระเงิน","สำเร็จ"].map((t,i)=>(
-            <li key={t} style={{ textAlign:"center", opacity:i>0?.5:1 }}>
-              <div style={{
-                width:44, height:44, borderRadius:"50%", margin:"0 auto 8px",
-                background:i===0?"#7c813e":"#ddd", color:"#fff",
-                display:"grid", placeItems:"center", fontWeight:800
-              }}>{i+1}</div>
-              <div style={{ color:i===0?"#111":"#999", fontWeight:i===0?800:700 }}>{t}</div>
-            </li>
-          ))}
-        </ol>
+        {/* ✅ ใช้ Stepper แบบเดียวกับหน้า Payment */}
+        <Stepper step={1} />
 
         {loading ? <div className="loading">กำลังโหลด...</div> : !room ? (
           <div className="emptyBox">{err || "ไม่พบข้อมูลห้อง"}</div>
         ) : (
           <div style={{ display:"grid", gridTemplateColumns:"360px 1fr", gap:28 }}>
-            {/* บัตรสรุปทางซ้าย */}
+            {/* สรุปทางซ้าย */}
             <aside style={{ border:"1px solid var(--line)", borderRadius:8, padding:16 }}>
               <h3 style={{ margin:"0 0 12px" }}>ห้องเลขที่ {room.room_number}</h3>
               <div style={{ borderRadius:8, overflow:"hidden", marginBottom:12 }}>
                 {hero ? <img src={hero} alt="" style={{ width:"100%", display:"block" }} /> : <div style={{ aspectRatio:"4/3", background:"#f3f3f3" }}/>}
               </div>
-              <SummaryRow label="วันที่">
-                {checkin} – {checkout} ({nights} คืน)
-              </SummaryRow>
-              <SummaryRow label="จำนวนผู้เข้าพัก">ผู้ใหญ่+เด็ก: {guests} คน</SummaryRow>
-              <SummaryRow label="ประเภทเตียง">เตียงเตียงใหญ่</SummaryRow>
+
+              <SummaryRow label="ประเภทห้อง">{room?.room_type?.type_name || "-"}</SummaryRow>
+              <SummaryRow label="วันที่">{checkin} – {checkout} ({nights} คืน)</SummaryRow>
+              <SummaryRow label="จำนวนผู้เข้าพัก">{guests} คน (สูงสุด {capacity})</SummaryRow>
+
+              <SummaryRow label="ประเภทเตียง">เตียงใหญ่</SummaryRow>
               <SummaryRow label="จำนวนเตียง">1 เตียง</SummaryRow>
-              <SummaryRow label="ราคา">{Number(room.price).toLocaleString()} บาท/คืน</SummaryRow>
-              <div style={{ marginTop:12, fontWeight:800 }}>รวมทั้งสิ้น ≈ {total.toLocaleString()} บาท</div>
+
+              <SummaryRow label="ราคา/คืน">{pricePerNight.toLocaleString()} บาท</SummaryRow>
+              <div style={{ marginTop:12, fontWeight:800, textAlign:"right" }}>รวมทั้งสิ้น ≈ {total.toLocaleString()} บาท</div>
               {overCap && <div style={{ color:"crimson", marginTop:6 }}>เกินความจุสูงสุด {capacity} คน</div>}
             </aside>
 
-            {/* ฟอร์มด้านขวา */}
+            {/* ฟอร์มทางขวา */}
             <section>
               <h3 style={{ marginTop:0 }}>กรอกข้อมูลผู้จอง</h3>
               {err && <div style={{ color:"crimson", marginBottom:8 }}>{err}</div>}
+
               <form onSubmit={handleSubmit} style={{ display:"grid", gap:12 }}>
                 <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-                  <label>ชื่อจริง *<input name="first_name" className="input" required /></label>
-                  <label>นามสกุล *<input name="last_name" className="input" required /></label>
+                  <label>ชื่อจริง *<input name="first_name" className="bkInput" required /></label>
+                  <label>นามสกุล *<input name="last_name" className="bkInput" required /></label>
                 </div>
                 <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-                  <label>อีเมล *<input type="email" name="email" className="input" required /></label>
-                  <label>หมายเลขโทรศัพท์ *<input type="tel" name="phone" className="input" required /></label>
+                  <label>อีเมล *<input type="email" name="email" className="bkInput" required /></label>
+                  <label>หมายเลขโทรศัพท์ *<input type="tel" name="phone" className="bkInput" required /></label>
                 </div>
-                <label>เพิ่มเติม (ไม่บังคับ)<textarea className="input" rows={4} placeholder="เช่น ขอเตียงเสริม"/></label>
+                <label>เพิ่มเติม (ไม่บังคับ)
+                  <textarea className="bkInput" rows={4} placeholder="เช่น ขอเตียงเสริม"/>
+                </label>
 
                 <div style={{ display:"flex", gap:12, marginTop:6 }}>
-                  <button type="button" className="detailBtn"
-                          onClick={()=>navigate(`/bookings/bookingroom/${id}`, { state:{ checkin, checkout, guests } })}>
+                  <button
+                    type="button"
+                    className="btnGhost"
+                    onClick={()=>navigate(`/bookings/bookingroom/${id}`, { state:{ checkin, checkout, guests } })}
+                  >
                     ยกเลิก
                   </button>
-                  <button type="submit" className="priceBtn" disabled={submitting || overCap}>
+                  <button type="submit" className="btnPrimary" disabled={submitting || overCap}>
                     {submitting ? "กำลังส่ง..." : "ยืนยัน"}
                   </button>
                 </div>
