@@ -138,11 +138,29 @@ export const roomApi = {
   list(params = {}) {
     return apiGet("/rooms", params);
   },
-  // ใช้เส้นทาง /room-types/slug/:slug ให้ตรงกับ backend ที่คุณเรียกใน Postman
   typeBySlug(slug) {
     return apiGet(`/room-types/slug/${encodeURIComponent(slug)}`);
   },
   listTypes() {
     return apiGet("/room-types");
+  },
+  // ✅ ดึงห้องเดี่ยว + include
+  detail(id, include = "images,type") {
+    return apiGet(`/rooms/${id}`, { include });
+  },
+  // ✅ เช็คความว่างห้องช่วงวัน
+  availability(id, checkin, checkout) {
+    return apiGet(`/rooms/${id}/availability`, { checkin, checkout });
+  },
+};
+
+// ---- ปรับ bookingApi ให้ถูกเส้นทาง & base ----
+export const bookingApi = {
+  checkRoomAvailability(roomId, checkin, checkout) {
+    return apiGet(`/rooms/${roomId}/availability`, { checkin, checkout });
+  },
+  // เส้นทาง public จาก reservationRoom.routes.js
+  createRoomReservation(payload) {
+    return apiPost("/reservations/room", payload);
   },
 };

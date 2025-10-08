@@ -10,7 +10,8 @@ export default function Navbar() {
     <header className="header">
       <div className="container headerRow">
         <NavLink className="brand" to="/">
-          <img src={logo} alt="Suree Garden Resort" />
+        {/* เพิ่ม className ให้กับ <img> เพื่อแยกสไตล์ */}
+            <img src={logo} alt="Suree Garden Resort" className="navbar-logo" />
         </NavLink>
         
 

@@ -19,6 +19,8 @@ import HomeFull from "./pages/HomeFull.jsx";
 import Rooms from "./pages/Rooms.jsx";
 import RoomType from "./pages/RoomType.jsx";
 import Banquet from "./pages/Banquet.jsx";
+import BookingRoom from "./pages/bookings/bookingroom.jsx"; // ✅ เตรียมสร้างหน้านี้
+import BookingRoomConfirm from "./pages/bookings/BookingRoomConfirm.jsx";
 
 /* ----------------- Temporary placeholder ----------------- */
 function AdminPayments() {
@@ -109,6 +111,17 @@ export default function App() {
 
       {/* กันลิงก์เก่าที่อาจยังชี้ /home อยู่ */}
       <Route path="/home" element={<Navigate to="/" replace />} />
+
+      {/* ✅ หน้าจองห้องพัก */}
+      <Route
+        path="/bookings/bookingroom/:id"
+        element={<BookingRoom />}
+      />
+
+      <Route 
+        path="/bookings/bookingroom/:id/confirm" 
+        element={<BookingRoomConfirm />} 
+      />
 
       {/* 404 -> home */}
       <Route path="*" element={<Navigate to="/" replace />} />

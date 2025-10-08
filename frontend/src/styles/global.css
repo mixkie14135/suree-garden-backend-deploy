@@ -1,503 +1,352 @@
 :root{
-  --brand:#3c5537;             /* แถบล่าง */
+  --brand:#3c5537;
   --line:#e9e9e9;
   --text:#222;
-
-  --accent-500:#7b914f;        /* ปุ่มจองเลย (เขียวเข้ม) */
-  --accent-700:#a7bf76;        /* สีตอน hover (เขียวอ่อน) */
-
+  --accent-500:#7b914f;
+  --accent-700:#a7bf76;
   --container-w:1140px;
   --radius:12px;
   --shadow:0 10px 26px rgba(0,0,0,.08);
 }
 
+/* -------------------- Base -------------------- */
 *{box-sizing:border-box}
 html,body,#root{height:100%}
 body{
   margin:0;
-  font-family:system-ui,-apple-system,"Noto Sans Thai","Segoe UI",Roboto,Arial,sans-serif;
+  font-family:"Noto Sans Thai", system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
   color:var(--text);
   background:#fff;
 }
+.navbar-logo{width:100%;height:auto;display:block;}
 
-/* ===== Header ขาว (sticky) ===== */
+/* -------------------- Header -------------------- */
 .header{
-  position:sticky; top:0; z-index:1000;
-  background:#fff; border-bottom:1px solid var(--line);
-  overflow:visible;
+  position:sticky;top:0;z-index:1000;
+  background:#fff;border-bottom:1px solid var(--line);
 }
-.container{ max-width:var(--container-w); margin:0 auto; padding:0 24px; }
-.headerRow{ display:flex; align-items:center; gap:16px; padding:10px 0; }
+.container{max-width:var(--container-w);margin:0 auto;padding:0 24px;}
+.headerRow{display:flex;align-items:center;gap:16px;padding:10px 0;}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;}
+.brand img{height:55px;transform:scale(1.25);transform-origin:left center;display:block;}
+.brandText{font-weight:800;color:#1e1e1e;}
 
-.brand{ display:flex; align-items:center; gap:10px; text-decoration:none; }
-.brand img{
-  height:55px;
-  transform:scale(1.25);
-  transform-origin:left center;
-  display:block;
-}
-.brandText{ font-weight:800; color:#1e1e1e; }
-
+/* -------------------- Search bar -------------------- */
 .searchBar{
-  flex:0 1 560px; max-width:560px;
-  margin-left:auto; margin-right:16px;
-  display:flex; align-items:center;
-  background:#fff; border:1px solid var(--line); border-radius:999px; overflow:hidden;
+  flex:0 1 560px;max-width:560px;margin-left:auto;margin-right:16px;
+  display:flex;align-items:center;background:#fff;
+  border:1px solid var(--line);border-radius:999px;overflow:hidden;
 }
-.searchBar input{ flex:1; border:0; outline:none; padding:10px 14px; font-size:14px; background:transparent; }
-.searchBar button{ border:0; background:transparent; padding:0 12px; cursor:pointer; color:#666; }
-.searchBar button:hover{ color:#333; }
+.searchBar input{flex:1;border:0;outline:none;padding:10px 14px;font-size:14px;background:transparent;}
+.searchBar button{border:0;background:transparent;padding:0 12px;cursor:pointer;color:#666;}
+.searchBar button:hover{color:#333;}
 
-.navMenu{ margin-left:auto; }
-.navMenu ul{ display:flex; gap:18px; list-style:none; margin:0; padding:0; }
-.navMenu a{ color:#1e1e1e; text-decoration:none; font-weight:600; font-size:14px; }
-.navMenu a:hover{ color:var(--accent-700); }
-.navMenu li{ position:relative; }
+/* -------------------- Nav Menu -------------------- */
+.navMenu{margin-left:auto;}
+.navMenu ul{display:flex;gap:18px;list-style:none;margin:0;padding:0;}
+.navMenu a{color:#1e1e1e;text-decoration:none;font-weight:600;font-size:14px;}
+.navMenu a:hover{color:var(--accent-700);}
+.navMenu li{position:relative;}
 
-/* ===== Dropdown ===== */
+/* -------------------- Dropdown -------------------- */
 .dropdown{
-  position:absolute; top:100%; right:0;
-  background:#fff; border:1px solid var(--line);
-  min-width:230px; border-radius:10px; box-shadow:0 10px 25px rgba(0,0,0,.12);
-  padding:0; overflow:hidden; display:none; z-index:1100;
+  position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);
+  background:#fff;border:1px solid var(--line);min-width:230px;border-radius:10px;
+  box-shadow:0 10px 25px rgba(0,0,0,.12);overflow:hidden;display:none;z-index:1100;
 }
-.hasDropdown:hover > .dropdown,
-.hasDropdown:focus-within > .dropdown{ display:block; }
-
-/* “สะพาน” โปร่งใสกันหลุดโฟกัส */
+.hasDropdown:hover>.dropdown,
+.hasDropdown:focus-within>.dropdown{display:block;}
 .hasDropdown:hover::after{
-  content:""; position:absolute; left:0; right:0; top:100%; height:8px;
+  content:"";position:absolute;left:0;right:0;top:100%;height:8px;
 }
 .dropdown a{
-  display:block; padding:12px 14px; background:#fff; color:#222;
-  text-decoration:none; font-weight:600; font-size:14px;
-  border-bottom:1px solid var(--line);
+  display:block;padding:12px 14px;background:#fff;color:#222;text-decoration:none;
+  font-weight:600;font-size:14px;border-bottom:1px solid var(--line);
 }
-.dropdown a:last-child{ border-bottom:none; }
-.dropdown a:hover{ background:var(--accent-700); color:#222; }
+.dropdown a:last-child{border-bottom:none;}
+.dropdown a:hover{background:var(--accent-700);color:#222;}
 
-/* ===== Public Hero ===== */
-.hero{ position:relative; height:520px; overflow:hidden; }
-.hero img{ width:100%; height:100%; object-fit:cover; display:block; }
-.heroOverlay{ position:absolute; inset:0; background:linear-gradient(180deg, rgba(0,0,0,.15), rgba(0,0,0,.35)); z-index:1; }
-.heroContent{ position:absolute; left:60px; bottom:48px; color:#fff; max-width:560px; z-index:2; }
-.heroTitle{ font-size:52px; margin:0 0 8px; font-weight:900; text-shadow:0 3px 8px rgba(0,0,0,.35); }
-.heroSubtitle{ font-size:20px; line-height:1.5; margin:0 0 18px; text-shadow:0 2px 6px rgba(0,0,0,.3); }
+/* -------------------- Hero -------------------- */
+.hero{position:relative;height:520px;overflow:hidden;}
+.hero img{width:100%;height:100%;object-fit:cover;display:block;}
+.heroOverlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.15),rgba(0,0,0,.35));z-index:1;}
+.heroContent{position:absolute;left:60px;bottom:48px;color:#fff;max-width:560px;z-index:2;}
+.heroTitle{font-size:52px;margin:0 0 8px;font-weight:900;text-shadow:0 3px 8px rgba(0,0,0,.35);}
+.heroSubtitle{font-size:20px;line-height:1.5;margin:0 0 18px;text-shadow:0 2px 6px rgba(0,0,0,.3);}
 .heroBtn{
-  background:var(--accent-500);
-  color:#fff; border:1px solid var(--accent-700);
-  border-radius:10px; padding:12px 20px; font-weight:800; cursor:pointer; transition:all .15s ease;
+  background:var(--accent-500);color:#fff;border:1px solid var(--accent-700);
+  border-radius:10px;padding:12px 20px;font-weight:800;cursor:pointer;transition:.15s;
 }
-.heroBtn:hover{ background:var(--accent-700); border-color:var(--accent-700); transform:translateY(-1px); box-shadow:0 6px 16px rgba(0,0,0,.18); }
+.heroBtn:hover{background:var(--accent-700);transform:translateY(-1px);box-shadow:0 6px 16px rgba(0,0,0,.18);}
 
-/* ===== Sections ===== */
-.section{ background:#fff; padding:56px 0; }
-.section--noTopPad{ padding-top:0; }
-.sectionHeader{ display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin-bottom:18px; }
-.h2{ font-size:24px; font-weight:900; margin:0; color:#2b2b2b; }
-.sub{ color:#6b6b6b; font-size:14px; margin:6px 0 0; }
-.linkAll{ color:#6b6b6b; text-decoration:none; font-weight:600; }
-.linkAll:hover{ color:#333; text-decoration:underline; }
+/* -------------------- Sections -------------------- */
+.section{background:#fff;padding:56px 0;}
+.section--noTopPad{padding-top:0;}
+.sectionHeader{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:18px;}
+.h2{font-size:24px;font-weight:900;margin:0;color:#2b2b2b;}
+.sub{color:#6b6b6b;font-size:14px;margin:6px 0 0;}
+.linkAll{color:#6b6b6b;text-decoration:none;font-weight:600;}
+.linkAll:hover{color:#333;text-decoration:underline;}
 
-/* รูปคู่ */
-.grid{ margin-top:10px; display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:32px; }
-.grid img{ width:100%; aspect-ratio:4/3; object-fit:cover; border-radius:var(--radius); box-shadow:var(--shadow); display:block; }
+/* -------------------- Contact & Footer -------------------- */
+.contact{background:#fff;border-top:1px solid var(--line);padding:36px 0 48px;}
+.contactTitle{margin:0 0 14px;font-size:16px;font-weight:800;}
+.contactList{margin:0;padding:0;list-style:none;display:grid;gap:12px;}
+.contactList li{display:flex;gap:10px;align-items:flex-start;color:#444;}
+.bottomBar{background:var(--brand);color:#eef0eb;padding:18px 0;}
+.bottomBar .container{text-align:center;font-size:14px;}
 
-/* รูปห้องด้านล่าง */
-.roomShot{ border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow); }
-.roomShot img{ width:100%; height:auto; display:block; }
+/* -------------------- Responsive -------------------- */
+@media (max-width:900px){
+  .brand img{height:32px;transform:scale(1.15);}
+  .searchBar{display:none;}
+  .hero{height:440px;}
+  .heroContent{left:24px;bottom:28px;}
+  .heroTitle{font-size:38px;}
+  .heroSubtitle{font-size:16px;}
+  .section{padding:32px 0;}
+}
 
-/* ===== ติดต่อเรา ===== */
-.contact{ background:#fff; border-top:1px solid var(--line); padding:36px 0 48px; }
-.contactTitle{ margin:0 0 14px; font-size:16px; font-weight:800; }
-.contactList{ margin:0; padding:0; list-style:none; display:grid; gap:12px; }
-.contactList li{ display:flex; gap:10px; align-items:flex-start; color:#444; }
-.ic{ width:20px; height:20px; display:inline-flex; align-items:center; justify-content:center; color:var(--accent-700); }
-.ic svg{ width:18px; height:18px; fill:currentColor; }
+/* ============================================================= */
+/* ======================= ROOM TYPE PAGE ======================= */
+/* ============================================================= */
 
-/* ===== Bottom bar ===== */
-.bottomBar{ background:var(--brand); color:#eef0eb; padding:18px 0; }
-.bottomBar .container{ text-align:center; font-size:14px; }
+.typeHero{
+  position:relative;isolation:isolate;
+  height:420px;overflow:hidden;
+  background-size:cover;background-position:center;background-repeat:no-repeat;
+}
+.typeHeroVeil{position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,0.32));z-index:2;}
+.typeHeroTitle{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;color:#fff;text-align:center;
+  text-shadow:0 3px 10px rgba(0,0,0,.35);z-index:3;
+}
+.typeHeroTitle h1{margin:0 0 4px;font-size:36px;font-weight:900;}
+.typeHeroSub{font-size:18px;opacity:.95;}
+
+/* -------------------- Layout -------------------- */
+.typeRooms{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(360px,1fr));
+  gap:36px;
+  margin-top:64px;
+}
+
+/* -------------------- Card -------------------- */
+.typePage .roomCard{
+  border:1px solid var(--line);
+  border-radius:12px;
+  overflow:hidden;
+  background:#fff;
+  box-shadow:0 4px 20px rgba(0,0,0,.08);
+  transition:transform .2s ease,box-shadow .2s ease;
+  display:flex;
+  flex-direction:column;
+}
+.typePage .roomCard:hover{transform:translateY(-3px);box-shadow:0 6px 24px rgba(0,0,0,.12);}
+
+/* -------------------- Image -------------------- */
+.typePage .rtCardImg{
+  width:100%;aspect-ratio:4/3;overflow:hidden;border-bottom:1px solid var(--line);
+}
+.typePage .rtCardImg img{width:100%;height:100%;object-fit:cover;display:block;}
+
+/* -------------------- Body -------------------- */
+.typePage .roomBody{
+  --pad-x:26px;--pad-y:22px;
+  padding:var(--pad-y) var(--pad-x) calc(var(--pad-y) + 4px);
+  display:flex;flex-direction:column;
+}
+.typePage .roomHeader{margin-bottom:10px;}
+.typePage .roomTitle{margin:0 0 6px;font-size:22px;font-weight:900;color:#1f1f1f;}
+.typePage .roomSub{font-size:14px;color:#666;}
+
+/* -------------------- Divider -------------------- */
+.typePage .roomDivider{
+  border:0;
+  border-top:1px solid var(--line);
+  margin-left:calc(var(--pad-x) * -1);
+  margin-right:calc(var(--pad-x) * -1);
+  width:calc(100% + (var(--pad-x) * 2));
+  margin-top:12px;margin-bottom:16px;
+}
+
+/* -------------------- Facts -------------------- */
+.typePage .facts{
+  list-style:none;padding:0;margin:0 0 18px;
+  display:grid;gap:10px;
+}
+.typePage .facts li{
+  display:flex;align-items:center;gap:10px;
+  color:#2b2b2b;font-size:15px;
+}
+.typePage .factIc{
+  width:20px;height:20px;flex-shrink:0;
+  filter:brightness(0) saturate(100%) invert(45%) sepia(19%) saturate(774%)
+          hue-rotate(41deg) brightness(95%) contrast(85%);
+}
+
+/* -------------------- Actions -------------------- */
+.typePage .roomActions{
+  margin-top:auto;padding-top:10px;
+  display:flex;align-items:center;gap:18px;
+  justify-content:space-between;
+}
+
+/* ปุ่มราคา: เริ่มฝั่งซ้าย */
+.typePage .priceBtn{
+  margin-right:auto;
+  display:inline-flex;align-items:baseline;gap:6px;
+  background:#7c813e;color:#fff;border:0;border-radius:10px;
+  padding:12px 20px;font-weight:800;font-size:16px;
+  box-shadow:0 8px 18px rgba(111,140,71,.28);
+  cursor:pointer;
+  position: relative;
+  z-index: 5;
+
+}
+.typePage .priceBtn strong{font-size:18px;}
+.typePage .priceBtn .per{font-size:13px;opacity:.9;}
+
+/* ปุ่มรายละเอียด: ชิดขวา */
+.typePage .detailBtn{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:15px;font-weight:800;color:#333;text-decoration:none;
+  border:1px solid var(--line);border-radius:10px;padding:10px 14px;background:#fff;
+  transition:all .2s ease;
+}
+.typePage .detailBtn:hover{
+  color:#111;border-color:var(--accent-700);
+  box-shadow:0 8px 20px rgba(0,0,0,.08);
+  transform:translateY(-1px);
+}
+.typePage .detailBtn:hover svg{transform:translateX(3px);}
+
+
+
+/* ============================================================= */
+/* ======================= BOOKING ROOM PAGE ===================== */
+
+
+
+/* ===== Booking detail (หน้าจอง) ===== */
+.bkH1{ margin:0; font-size:24px; font-weight:900; }
+.bkSubTitle{ color:#666; }
+
+/* Hero เตี้ยลง + ครอบภาพสวย */
+.brHero{
+  border:1px solid var(--line);
+  border-radius:12px;
+  overflow:hidden;
+  /* ให้สูงประมาณ 420px บนเดสก์ท็อป (ตามฟีล Figma), ไม่ให้สูงเกินหน้าจอเล็ก */
+  max-height: 420px;
+}
+.brHero img{
+  width:100%;
+  height:100%;
+  max-height:420px;
+  object-fit:cover;
+  display:block;
+}
+.brHeroPh{ aspect-ratio:16/9; background:#f3f3f3; }
+
+/* ===== แถบ 5 บล็อก (ใต้รูป) ===== */
+.bkBar{
+  margin-top:12px;
+  display:grid;
+  grid-template-columns: 1.6fr 1fr 1fr 1.1fr 0.9fr; /* 5 คอลัมน์ */
+  border:1px solid var(--line);
+  border-radius:8px;
+  overflow:hidden;
+  background:#fff;
+}
+
+/* ให้ทุกคอลัมน์มีเส้นคั่นขวา ยกเว้นคอลัมน์สุดท้าย */
+/* .bkBar > :where(.bkCell,.bkPriceCell,.bkBarGo){ border-right:1px solid var(--line); }
+.bkBar > :where(.bkCell,.bkPriceCell,.bkBarGo):last-child{ border-right:0; } */
+.bkBar > :where(.bkCell,.bkBarGo){ border-right:1px solid var(--line); }
+.bkBar > :where(.bkCell,.bkBarGo):last-child{ border-right:0; }
+
+.bkCell{ padding:14px 16px; background:#fff; }
+.bkLabel{ font-size:13px; color:#666; margin-bottom:6px; }
+.bkTitle{ font-size:18px; font-weight:800; color:#1f1f1f; line-height:1.1; }
+.bkSub{ color:#6b6b6b; margin-top:4px; }
+
+/* input ที่ใช้ในบาร์ */
+.bkInput{
+  width:100%; height:40px;
+  border:1px solid var(--line); border-radius:8px;
+  padding:0 10px; font-size:14px; outline:none;
+}
+.bkInput:focus{ border-color:#b7c58d; box-shadow:0 0 0 3px rgba(167,191,118,.25); }
+
+/* เพิ่ม CSS สำหรับ label ที่มีการแสดง capacity */
+.bkLabelWithCapacity {
+  display: flex; /* จัดให้อยู่ในแถวเดียวกัน */
+  align-items: center; /* จัดให้อยู่กึ่งกลางแนวตั้ง */
+  gap: 8px; /* เว้นระยะห่างระหว่างข้อความหลักกับ capacity */
+  font-size: 13px; /* ตาม .bkLabel เดิม */
+  color: #666; /* ตาม .bkLabel เดิม */
+  margin-bottom: 6px; /* ตาม .bkLabel เดิม */
+}
+
+.bkCapacityHelp {
+  font-size: 11px; /* ทำให้เล็กกว่าเล็กน้อย */
+  font-weight: 500; /* อาจจะต้องใช้ฟอนต์ที่บางลง */
+  color: #999; /* อาจจะทำให้สีจางลง */
+  margin: 0; /* ลบ margin ที่อาจมี */
+}
+
+/* ===== บล็อกสีเขียวทั้งช่องที่กดได้ (.bkBarGo) ===== */
+.bkBarGo{
+  background:#7c813e;
+  color:#fff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  font-weight:900;
+  border:0;
+  padding:0 16px;   /* ให้ดูมีหายใจนิดหน่อย */
+  cursor:pointer;
+  transition:transform .12s ease, box-shadow .12s ease, filter .12s ease;
+}
+.bkBarGo:hover{ transform:translateY(-1px); box-shadow:0 8px 20px rgba(0,0,0,.12); filter:brightness(1.02); }
+.bkBarGo:active{ transform:translateY(0); box-shadow:0 4px 10px rgba(0,0,0,.08); }
+.bkBarGo svg{ transition:transform .15s ease; }
+.bkBarGo:hover svg{ transform:translateX(2px); }
 
 /* Responsive */
 @media (max-width:900px){
-  .brand img{ height:32px; transform:scale(1.15); }
-  .searchBar{ display:none; }
-  .hero{ height:440px; }
-  .heroContent{ left:24px; bottom:28px; }
-  .heroTitle{ font-size:38px; }
-  .heroSubtitle{ font-size:16px; }
-  .grid{ grid-template-columns:1fr; gap:20px; }
-  .section{ padding:32px 0; }
+  .bkBar{ grid-template-columns: 1fr 1fr; }
+  .bkBarGo{ grid-column: 1 / -1; } /* ให้กินเต็มแถวล่างบนจอเล็ก */
 }
 
 
+/* Sections */
+.bkSection{ padding:34px 0 8px; }
+.bkSecTitle{ margin:0 0 10px; font-size:18px; font-weight:800; text-align:center; }
+.bkDesc{ max-width:760px; margin:0 auto; color:#444; text-align:center; line-height:1.7; }
 
-/* ==== HOME FULL ===== */
-.homeHero{ position:relative; height:550px; overflow:hidden; }
-.homeHero img{ width:100%; height:100%; object-fit:cover; display:block; }
-.homeHeroShade{ position:absolute; inset:0; background:linear-gradient(180deg,rgba(0,0,0,.15),rgba(0,0,0,.3)); }
-
-.homeIntro{ padding:36px 0 8px; }
-.homeTitle{ text-align:center; margin:0 0 22px; font-weight:900; font-size:28px; color:#222; }
-
-.introGrid{ display:grid; grid-template-columns:320px 1fr; gap:24px; align-items:center; }
-.introPic img{ width:100%; border-radius:12px; box-shadow:0 10px 26px rgba(0,0,0,.08); object-fit:cover; aspect-ratio:4/3; }
-.introText .h3{ margin:8px 0 10px; font-size:18px; font-weight:800; }
-.chipRow{ display:flex; flex-wrap:wrap; gap:8px; }
-.chip{
-  display:inline-block; border:1px solid var(--line); padding:6px 10px; border-radius:999px;
-  font-weight:700; font-size:12px; color:#4a4a4a; background:#fff;
+/* Amenities grid */
+.bkAmenGrid{
+  max-width:860px; margin:14px auto 0; padding:0; list-style:none;
+  display:grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap:12px 18px;
+}
+.bkAmenItem{
+  display:flex; align-items:center; gap:10px;
+  border-top:1px solid var(--line);
+  padding:12px 6px 0;
+  color:#2b2b2b;
 }
 
-.homeRooms{
-  display:grid; gap:18px; padding:24px 0 60px;
-  perspective:1000px;
-  perspective-origin:50% 40%;
-}
-.roomCard{
-  display:grid; grid-template-columns:300px 1fr; gap:22px; align-items:center;
-  background:#fff; border:1px solid var(--line); border-radius:14px; padding:14px;
-  box-shadow:0 10px 26px rgba(0,0,0,.06);
-}
-.roomImg img{ width:100%; height:220px; object-fit:cover; border-radius:12px; display:block; }
-.roomInfo .roomTitle{ margin:10px 0 6px; font-size:18px; font-weight:900; color:#222; }
-.roomInfo .roomDesc{ margin:0; color:#555; }
-
+/* Responsive */
 @media (max-width:900px){
-  .homeHero{ height:300px; }
-  .introGrid{ grid-template-columns:1fr; }
-  .roomCard{ grid-template-columns:1fr; }
-  .roomImg img{ height:200px; }
+  .brHero{ max-height: 300px; }
+  .brHero img{ max-height: 300px; }
+  .bkBar{ grid-template-columns:1fr; }
+  .bkCell{ border-right:0; border-bottom:1px solid var(--line); }
+  .bkCell:last-child{ border-bottom:0; }
+  .bkAmenGrid{ grid-template-columns: repeat(2,minmax(0,1fr)); }
 }
-
-/* === Hover Tilt (option) === */
-.tiltCard{
-  position:relative;
-  transform-style:preserve-3d;
-  transition:transform .12s ease, box-shadow .12s ease;
-  will-change:transform, box-shadow;
-  overflow:visible;
-}
-.tiltCard .tiltGlow{
-  position:absolute; inset:0;
-  border-radius:inherit;
-  pointer-events:none;
-  opacity:0; transition:opacity .15s ease;
-  background: radial-gradient(360px circle at var(--mx,50%) var(--my,50%), rgba(255,255,255,.22), rgba(255,255,255,0) 42%);
-  mix-blend-mode:overlay;
-}
-.tiltCard:hover .tiltGlow{ opacity:1; }
-.tiltCard .roomImg img{ transition:transform .18s ease; will-change:transform; }
-@media (hover:hover){
-  .tiltCard:hover .roomImg img{ transform: translateZ(24px) scale(1.02); }
-}
-@media (hover:none){
-  .tiltCard{ transition:none; }
-  .tiltGlow{ display:none; }
-}
-
-/* === Hover Pop (เด้งเบา ๆ) === */
-.hoverPop{ transition:transform .18s ease, box-shadow .18s ease; }
-.hoverPop:hover{ transform:translateY(-4px); box-shadow:0 14px 30px rgba(0,0,0,.12); }
-
-/* ---------- TYPE PAGE (หน้าแต่ละประเภทห้อง) ---------- */
-/* ใช้ภาพเป็นพื้นหลังจาก inline style (ไม่ต้องมี <img>) */
-.typeHero{
-  position:relative;
-  isolation:isolate;                /* สร้าง stacking context ของตัวเอง */
-  height:420px; overflow:hidden;
-  background-size:cover; background-position:center; background-repeat:no-repeat;
-}
-/* fallback ถ้ามี <img> ติดมาให้ซ่อนไว้ */
-.typeHero > img{ display:none; }
-
-/* โอเวอร์เลย์ “ขาวหม่น” */
-.typeHeroVeil{
-  position:absolute; inset:0;
-  background: linear-gradient(180deg,rgba(255, 255, 255, 0.322));
-  z-index:2;                        /* ใต้ title แต่เหนือรูป */
-}
-
-/* ชื่อหน้า */
-.typeHeroTitle{
-  position:absolute; inset:0;
-  display:flex; flex-direction:column; align-items:center; justify-content:center;
-  color:#fff; text-align:center; text-shadow:0 3px 10px rgba(0,0,0,.35);
-  z-index:3;
-}
-.typeHeroTitle h1{ margin:0 0 4px; font-size:36px; font-weight:900; }
-.typeHeroSub{ font-size:18px; opacity:.95; }
-
-/* แผ่นบังชั้นบนสุด (กันลูกศร/ดอททุกชนิดที่ยังทะลุ) */
-.typeHero::after{
-  content:"";
-  position:absolute; inset:0;
-  z-index:2147483647;               /* สูงมาก ๆ */
-  pointer-events:none;              /* ไม่บังการคลิก */
-  background:transparent;           /* มองไม่เห็น (เรามี veil อยู่แล้ว) */
-}
-
-/* list การ์ด */
-.typeRooms{
-  display:grid; gap:22px; padding:28px 0 60px;
-  grid-template-columns:repeat(2, minmax(0, 1fr));
-}
-@media (max-width:900px){ .typeRooms{ grid-template-columns:1fr; } }
-
-/* ปุ่ม & ลิงก์ในการ์ด */
-.roomActions{ display:flex; align-items:center; gap:14px; margin-top:12px; }
-.priceBtn{
-  background:var(--accent-500); color:#fff; border:1px solid var(--accent-700);
-  padding:10px 14px; border-radius:10px; font-weight:800; cursor:pointer;
-}
-.priceBtn:hover{ background:var(--accent-700); }
-.detailLink{ color:#6b6b6b; font-weight:700; text-decoration:none; }
-.detailLink:hover{ color:#333; text-decoration:underline; }
-
-/* รายการคุณสมบัติเล็ก ๆ */
-.facts{ list-style:none; margin:8px 0 0; padding:0; color:#555; }
-.facts li{ margin:2px 0; }
-
-/* =================== KILL ALL ARROWS/DOTS เฉพาะหน้า RoomType =================== */
-.typePage .typeHero,
-.typePage .typeRooms { position: relative; }
-
-.typePage :is(
-  /* react-responsive-carousel */
-  .control-arrow, .carousel .control-arrow, .control-prev, .control-next,
-  .carousel-status, .control-dots, .thumbs, .thumbs-wrapper,
-
-  /* slick */
-  .slick-prev, .slick-next, .slick-dots,
-
-  /* swiper */
-  .swiper-button-prev, .swiper-button-next, .swiper-pagination,
-
-  /* image-gallery */
-  .image-gallery-icon, .image-gallery-left-nav, .image-gallery-right-nav,
-  .image-gallery-bullets, .image-gallery-thumbnails,
-
-  /* glide / splide / tiny-slider / keen / flickity / embla */
-  .glide__arrow, .glide__bullets,
-  .splide__arrow, .splide__pagination,
-  .tns-controls, .tns-nav,
-  .keen-slider__arrow, .keen-slider__dot,
-  .flickity-prev-next-button, .flickity-page-dots,
-  .embla__button, .embla__dots,
-
-  /* คีย์เวิร์ดกว้าง ๆ */
-  [class*="arrow"], [class*="Arrow"],
-  [class*="prev"],  [class*="Prev"],
-  [class*="next"],  [class*="Next"],
-  [class*="pager"], [class*="dot"], [class*="bullet"]
-){
-  display:none !important;
-  visibility:hidden !important;
-  opacity:0 !important;
-  pointer-events:none !important;
-}
-
-/* ปิด pseudo-element ที่เอาไว้สร้างสามเหลี่ยมเป็นลูกศร */
-.typePage :is(
-  .control-arrow, .carousel .control-arrow,
-  .slick-prev, .slick-next,
-  .swiper-button-prev, .swiper-button-next,
-  .glide__arrow, .splide__arrow,
-  .image-gallery-left-nav, .image-gallery-right-nav,
-  .flickity-prev-next-button, .embla__button
-)::before,
-.typePage :is(
-  .control-arrow, .carousel .control-arrow,
-  .slick-prev, .slick-next,
-  .glide__arrow, .splide__arrow
-)::after{
-  content:none !important;
-}
-
-/* กันกรณีบาง lib ใช้ aria-label/title */
-.typePage :is(
-  [aria-label*="Previous"], [aria-label*="Prev"], [aria-label*="ก่อนหน้า"],
-  [aria-label*="Next"],     [aria-label*="ถัดไป"],
-  [title*="Previous"], [title*="Prev"], [title*="ก่อนหน้า"],
-  [title*="Next"],     [title*="ถัดไป"]
-){
-  display:none !important;
-}
-
-/* ==== ปุ่มราคา/คืน & ปุ่มรายละเอียด (สวยขึ้น) ==== */
-.roomActions{
-  margin-top:14px;
-  display:flex; align-items:center; gap:12px; flex-wrap:wrap;
-}
-
-/* ปุ่มราคา – โทนเขียว พรีเมียม */
-.priceBtn{
-  display:inline-flex; align-items:center; gap:8px;
-  padding:10px 14px;
-  border:0; border-radius:12px;
-  background: linear-gradient(180deg, #8FAE62, #6F8C47);
-  color:#fff; font-weight:800; cursor:pointer;
-  box-shadow:0 8px 18px rgba(111,140,71,.28);
-  transition:transform .15s ease, box-shadow .15s ease, filter .15s ease;
-}
-.priceBtn .baht{ opacity:.95; font-weight:900; transform:translateY(-1px); }
-.priceBtn strong{ font-size:18px; letter-spacing:.2px; }
-.priceBtn .per{ opacity:.95; font-size:13px; font-weight:700; }
-.priceBtn:hover{ transform:translateY(-1px); box-shadow:0 12px 24px rgba(111,140,71,.32); filter:saturate(1.05); }
-
-/* ปุ่มรายละเอียด – ghost/outlined */
-.detailBtn{
-  display:inline-flex; align-items:center; gap:8px;
-  padding:10px 14px; border-radius:12px;
-  border:1px solid var(--line); background:#fff; color:#2b2b2b;
-  font-weight:800; text-decoration:none;
-  box-shadow:0 4px 10px rgba(0,0,0,.05);
-  transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease, color .15s ease;
-}
-.detailBtn:hover{
-  transform:translateY(-1px);
-  border-color:var(--accent-700);
-  color:#111;
-  box-shadow:0 10px 20px rgba(0,0,0,.08);
-}
-.detailBtn svg{ transition: transform .15s ease; }
-.detailBtn:hover svg{ transform: translateX(3px); }
-
-/* จอเล็ก */
-@media (max-width:900px){
-  .roomActions{ gap:10px; }
-  .priceBtn strong{ font-size:17px; }
-}
-
-
- /* RoomType page CSS  */
-
- /* === Card Layout (ตาม Figma) === */
-
-.typeRooms {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-  gap: 36px;
-  margin-top: 64px;
-}
-
-.roomCard {
-  display: flex;
-  flex-direction: column;
-  background: #fff;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.roomCard:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
-}
-
-.roomImgWrap {
-  width: 100%;
-  height: 240px;
-  overflow: hidden;
-}
-
-.roomImg {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  transition: transform 0.4s ease;
-}
-
-.roomCard:hover .roomImg {
-  transform: scale(1.05);
-}
-
-.roomBody {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: 18px 22px 20px;
-  flex: 1;
-}
-
-.roomTitle {
-  font-size: 18px;
-  font-weight: 700;
-  margin-bottom: 4px;
-  color: #1f1f1f;
-}
-
-.roomSub {
-  font-size: 13px;
-  color: #777;
-  margin-bottom: 10px;
-}
-
-.facts {
-  list-style: none;
-  padding: 0;
-  margin: 0 0 16px;
-}
-
-.facts li {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: #2b2b2b;
-  font-size: 14px;
-  margin-bottom: 6px;
-}
-
-.factIc {
-  width: 18px;
-  height: 18px;
-  flex-shrink: 0;
-  filter: brightness(0) saturate(100%) invert(45%) sepia(19%) saturate(774%)
-    hue-rotate(41deg) brightness(95%) contrast(85%);
-}
-
-.roomActions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: auto;
-  padding-top: 10px;
-}
-
-.priceBtn {
-  background-color: #7c813e;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  padding: 10px 18px;
-  font-weight: 700;
-  display: inline-flex;
-  align-items: baseline;
-  gap: 6px;
-  font-size: 16px;
-  cursor: default;
-}
-
-.priceBtn .per {
-  font-size: 12px;
-  opacity: 0.9;
-}
-
-.detailBtn {
-  color: #333;
-  text-decoration: none;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 15px;
-  transition: color 0.2s;
-}
-
-.detailBtn:hover {
-  color: #7d853b;
-}
-
-
