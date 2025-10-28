@@ -22,6 +22,7 @@ import Banquet from "./pages/Banquet.jsx";
 import BookingRoom from "./pages/bookings/bookingroom.jsx"; // ✅ เตรียมสร้างหน้านี้
 import BookingRoomConfirm from "./pages/bookings/BookingRoomConfirm.jsx";
 import BookingPayment from "./pages/bookings/BookingPayment.jsx";
+import BookingSuccess from "./pages/bookings/BookingSuccess.jsx";
 
 /* ----------------- Temporary placeholder ----------------- */
 function AdminPayments() {
@@ -127,6 +128,10 @@ export default function App() {
       // ✅ ตรงกับ navigate(`/bookings/payment?code=...`)
       <Route path="/bookings/payment" 
       element={<BookingPayment />} 
+      />
+
+      <Route path="/bookings/success" 
+      element={<BookingSuccess />} 
       />
 
 

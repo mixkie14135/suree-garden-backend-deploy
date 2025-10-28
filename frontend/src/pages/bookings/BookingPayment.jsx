@@ -3,7 +3,16 @@ import { useEffect, useMemo, useState } from "react";
 import { useLocation, useSearchParams, useNavigate } from "react-router-dom";
 import Navbar from "../../components/Navbar";
 import Stepper from "../../components/Stepper";
-import { reservationApi, paymentApi } from "../../lib/api"; // ✅ เอา fileUrl ออก
+import { reservationApi, paymentApi, roomApi } from "../../lib/api";
+
+/* helper: แปลงค่าเป็น number แบบกันพลาด (Prisma Decimal/string) */
+function asNumber(x) {
+  if (x == null) return NaN;
+  if (typeof x === "number") return x;
+  const s = String(x).replace(/[, ]/g, "");
+  const n = parseFloat(s);
+  return Number.isFinite(n) ? n : NaN;
+}
 
 export default function BookingPayment() {
   const nav = useNavigate();
@@ -18,38 +27,90 @@ export default function BookingPayment() {
   const [data, setData] = useState(null);
 
   const [file, setFile] = useState(null);
-  const [amount, setAmount] = useState(state?.total || ""); // ถ้า Confirm ส่ง total มาก็ prefill
 
-  // โหลดสถานะ
+  // โหลดสถานะการจอง
   useEffect(() => {
     let alive = true;
     if (!code) return;
     setLoading(true);
     setErr("");
     reservationApi.getStatusByCode(code)
-      .then(res => {
+      .then((res) => {
         if (!alive) return;
-        setData(res);
+        // normalize: บางแบ็กเอนด์ตอบ {status:'ok', data:{...}}
+        const payload = (res && typeof res === "object" && "data" in res && res.data) ? res.data : res;
+        setData(payload);
+        // console.debug("[STATUS RAW]", res);
+        // console.debug("[STATUS PAYLOAD]", payload);
       })
-      .catch(e => alive && setErr(e.message || "โหลดข้อมูลสถานะไม่สำเร็จ"))
+      .catch((e) => alive && setErr(e.message || "โหลดข้อมูลสถานะไม่สำเร็จ"))
       .finally(() => alive && setLoading(false));
     return () => { alive = false; };
   }, [code]);
 
+  // คืนที่พัก
   const nights = useMemo(() => {
-    if (!data?.checkin_date || !data?.checkout_date) return 0;
-    const ci = new Date(data.checkin_date);
-    const co = new Date(data.checkout_date);
+    const ciRaw = data?.checkin_date;
+    const coRaw = data?.checkout_date;
+    if (!ciRaw || !coRaw) return 0;
+    const ci = new Date(String(ciRaw));
+    const co = new Date(String(coRaw));
+    if (isNaN(ci) || isNaN(co)) return 0;
     const d = (co - ci) / 86400000;
     return d > 0 ? d : 0;
   }, [data]);
+
+  // ดึงราคา/คืนจากห้อง ถ้า API สถานะไม่ให้มา
+  const [roomPrice, setRoomPrice] = useState(NaN);
+  useEffect(() => {
+    let alive = true;
+    // ถ้ามี total จาก state หรือมี amount จาก API แล้ว ไม่ต้องโหลดราคา
+    if (asNumber(state?.total) > 0) return;
+    if (asNumber(data?.total ?? data?.total_price ?? data?.amount ?? data?.payment_amount) > 0) return;
+
+    const rid = data?.room?.room_id || data?.room_id;
+    if (!rid) return;
+
+    roomApi.detail(rid, "type")
+      .then((room) => {
+        if (!alive) return;
+        const p =
+          asNumber(room?.price) ||
+          asNumber(room?.room?.price) || // เผื่อโครงสร้างหุ้มอีกชั้น
+          asNumber(room?.data?.price);
+        setRoomPrice(p);
+      })
+      .catch(() => { if (alive) setRoomPrice(NaN); });
+
+    return () => { alive = false; };
+  }, [data, state?.total]);
+
+  // คำนวณยอดอัตโนมัติ: state.total -> data.amount -> roomPrice * nights
+  const autoAmount = useMemo(() => {
+    const s = asNumber(state?.total);
+    if (s > 0) return s;
+
+    const fromApi = asNumber(
+      (data?.total ?? data?.total_price ?? data?.amount ?? data?.payment_amount)
+    );
+    if (fromApi > 0) return fromApi;
+
+    const p = asNumber(
+      data?.price_per_night ||
+      data?.room_price ||
+      roomPrice
+    );
+    if (p > 0 && nights > 0) return p * nights;
+
+    return NaN;
+  }, [state?.total, data, roomPrice, nights]);
 
   const deadline = useMemo(() => {
     const d = data?.payment_due_at || data?.expires_at;
     return d ? new Date(d) : null;
   }, [data]);
 
-  // นับถอยหลัง (display)
+  // นับถอยหลัง
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000);
@@ -71,9 +132,17 @@ export default function BookingPayment() {
     e.preventDefault();
     if (!code) { setErr("กรุณากรอกรหัสการจอง"); return; }
     if (!file) { setErr("กรุณาแนบสลิป"); return; }
+    if (!Number.isFinite(autoAmount) || autoAmount <= 0) {
+      setErr("ไม่พบยอดชำระที่ถูกต้อง");
+      return;
+    }
     setErr("");
     try {
-      await paymentApi.uploadRoomSlip({ reservation_code: code, amount, file });
+      await paymentApi.uploadRoomSlip({
+        reservation_code: code,
+        amount: autoAmount,
+        file
+      });
       alert("อัปโหลดสลิปเรียบร้อย! กรุณารอแอดมินตรวจสอบ");
       nav(`/bookings/success?code=${encodeURIComponent(code)}`, { replace: true });
     } catch (e2) {
@@ -87,10 +156,8 @@ export default function BookingPayment() {
     <>
       <Navbar />
       <main className="container" style={{ padding:"28px 0 60px" }}>
-        {/* ✅ Stepper: step 2 กำลังทำงาน, step 1 เป็น completed มีเส้นไหลเชื่อม */}
         <Stepper step={2} />
 
-        {/* ค้นหาด้วย code กรณีเข้าหน้านี้ตรง ๆ */}
         {!initCode && (
           <form onSubmit={(e)=>{ e.preventDefault(); setCode(code.trim()); }} style={{ display:"flex", gap:8, margin:"12px 0 20px" }}>
             <input className="bkInput" placeholder="กรอกรหัสการจอง" value={code} onChange={e=>setCode(e.target.value)} />
@@ -102,7 +169,7 @@ export default function BookingPayment() {
           <div className="emptyBox" style={{ color:"crimson" }}>{err}</div>
         ) : data ? (
           <div className="bpGrid">
-            {/* ซ้าย: สรุปการจอง */}
+            {/* ซ้าย: สรุป */}
             <aside className="bpCard">
               <h3 className="bpCardTitle">รายละเอียดการจอง</h3>
               <dl className="bpList">
@@ -113,10 +180,10 @@ export default function BookingPayment() {
                 {data.last_payment_status && (
                   <div><dt>ชำระล่าสุด</dt><dd>{thaiPayStatus(data.last_payment_status)}</dd></div>
                 )}
-                {amount && (
+                {Number.isFinite(autoAmount) && autoAmount > 0 && (
                   <div style={{borderBottom:0}}>
                     <dt>ยอดที่ต้องชำระ</dt>
-                    <dd style={{ color:"#b30000" }}>{Number(amount).toLocaleString()} บาท</dd>
+                    <dd style={{ color:"#b30000" }}>{Math.round(autoAmount).toLocaleString()} บาท</dd>
                   </div>
                 )}
               </dl>
@@ -130,7 +197,7 @@ export default function BookingPayment() {
               )}
             </aside>
 
-            {/* ขวา: วิธีชำระ & อัปโหลดสลิป */}
+            {/* ขวา: ช่องทาง & อัปโหลด */}
             <section className="bpCard">
               <h3 className="bpCardTitle">ช่องทางการชำระ</h3>
               {acc ? (
@@ -146,16 +213,60 @@ export default function BookingPayment() {
 
               <form className="bpPayForm" onSubmit={handleUpload}>
                 <label className="bpField">
-                  <div>ยอดที่โอน (บาท)</div>
-                  <input className="bkInput" type="number" min="0" step="1" value={amount} onChange={e=>setAmount(e.target.value)} placeholder="ใส่ยอดที่โอนจริง" />
+                  <div>ยอดที่ต้องชำระ (บาท)</div>
+                  {Number.isFinite(autoAmount) && autoAmount > 0 ? (
+                    <>
+                      <input className="bkInput" value={Math.round(autoAmount).toLocaleString()} readOnly />
+                      <input type="hidden" name="amount" value={Math.round(autoAmount)} />
+                    </>
+                  ) : (
+                    <div className="emptyBox" style={{color:"#b30000"}}>
+                      ไม่พบยอดชำระ โปรดรีเฟรชหน้าหรือกลับไปเริ่มจองใหม่
+                    </div>
+                  )}
                 </label>
+
                 <label className="bpField">
                   <div>แนบสลิป *</div>
-                  <input className="bkInput" type="file" accept="image/*,application/pdf" onChange={e=>setFile(e.target.files?.[0] || null)} />
+                  <input
+                    className="bkInput"
+                    type="file"
+                    accept="image/*,application/pdf"
+                    onChange={(e)=>setFile(e.target.files?.[0] || null)}
+                  />
                 </label>
+
                 <div style={{ display:"flex", gap:10 }}>
-                  <button type="button" className="btnGhost" onClick={()=>nav(-1)}>ยกเลิก</button>
-                  <button type="submit" className="btnPrimary">อัปโหลดหลักฐานการโอน</button>
+                  <button
+                    type="button"
+                    className="btnGhost"
+                    onClick={() => {
+                      if (state?.back_url) { nav(state.back_url, { replace:true }); return; }
+                      const back = state?.back_to || (data ? {
+                        id: data?.room?.id || data?.room_id || data?.room?.room_id,
+                        checkin: data?.checkin_date,
+                        checkout: data?.checkout_date,
+                        guests: data?.guests || data?.num_guests || 1,
+                      } : null);
+                      if (back?.id && back?.checkin && back?.checkout) {
+                        const qs = new URLSearchParams({
+                          checkin: back.checkin, checkout: back.checkout,
+                          guests: String(back.guests || 1),
+                        }).toString();
+                        nav(`/bookings/bookingroom/${back.id}/confirm?${qs}`, { replace:true });
+                      } else { nav(-1); }
+                    }}
+                  >
+                    ยกเลิก
+                  </button>
+
+                  <button
+                    type="submit"
+                    className="btnPrimary"
+                    disabled={!file || !Number.isFinite(autoAmount) || autoAmount <= 0}
+                  >
+                    อัปโหลดหลักฐานการโอน
+                  </button>
                 </div>
                 <div className="bpNote">เมื่อส่งหลักฐานแล้ว กรุณารอเจ้าหน้าที่ตรวจสอบและยืนยัน</div>
               </form>

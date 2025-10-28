@@ -369,3 +369,19 @@
   .admin .toolbar .search input{ width:100%; }
 }
 
+.swal2-confirm-button {
+  background-color: var(--accent-500) !important;
+  border: none !important;
+  color: white !important;
+  padding: 10px 20px !important;
+  border-radius: 8px !important;
+  font-weight: 800 !important;
+  cursor: pointer !important;
+  transition: background-color 0.2s ease !important;
+}
+
+div:where(.swal2-icon).swal2-question {
+  border-color: #b8b8b8;
+  color: #b8b8b8;
+}
+

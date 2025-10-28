@@ -46,7 +46,7 @@ app.use('/uploads', express.static(UPLOAD_ROOT));
 /* ⬇️ ใส่ rate limit เฉพาะเส้น public ที่เสี่ยง spam — ต้องอยู่ก่อนผูก routes */
 app.use('/api/reservations', publicRateLimit);                 // สร้างการจอง (public)
 app.use('/api/payments', publicRateLimit);                     // อัปสลิป (public)
-app.use('/api/reservations/rooms/status', publicRateLimit);    // เช็คสถานะด้วยโค้ด (public)
+app.use('/api/reservations/room/status', publicRateLimit);    // เช็คสถานะด้วยโค้ด (public)
 app.use('/api/reservations/banquets/status', publicRateLimit); // เช็คสถานะด้วยโค้ด (public)
 
 const dashboardRoutes = require('./modules/dashboard/dashboard.routes');
@@ -61,7 +61,7 @@ app.use('/api', reservationBanquetRoutes);
 app.use('/api', roomImageRoutes);
 app.use('/api', banquetImageRoutes);
 
-app.use('/api', paymentRoutes);
+app.use('/api/payments', paymentRoutes); // /api/payments/upload-slip (public)
 app.use('/api', dashboardRoutes);
 
 

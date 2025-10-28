@@ -1,6 +1,6 @@
 // src/pages/bookings/BookingRoomConfirm.jsx
 import { useEffect, useMemo, useState } from "react";
-import { useParams, useSearchParams, useNavigate } from "react-router-dom";
+import { useParams, useSearchParams, useNavigate, useLocation } from "react-router-dom";
 import Navbar from "../../components/Navbar";
 import Stepper from "../../components/Stepper";
 import { roomApi, bookingApi, fileUrl } from "../../lib/api";
@@ -9,6 +9,7 @@ export default function BookingRoomConfirm() {
   const { id } = useParams();
   const [sp] = useSearchParams();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const checkin  = sp.get("checkin")  || "";
   const checkout = sp.get("checkout") || "";
@@ -78,8 +79,14 @@ export default function BookingRoomConfirm() {
       const total = result?.data?.total || result?.total;
 
       navigate(`/bookings/payment?code=${encodeURIComponent(rc)}`, {
-        replace: true,
-        state: { reservation_code: rc, total }
+        state: {
+          reservation_code: rc,
+          total,
+          // ส่ง URL ปัจจุบันกลับไปเป็น back_url
+          back_url: location.pathname + location.search,
+          // แนบค่าไว้ด้วย เผื่ออยากใช้ประกอบการสร้างลิงก์กรณี back_url ไม่มี
+          back_to: { id: Number(id), checkin, checkout, guests }
+        }
       });
     } catch (e2) {
       setErr(e2.message || "จองไม่สำเร็จ");
@@ -101,20 +108,20 @@ export default function BookingRoomConfirm() {
           <div style={{ display:"grid", gridTemplateColumns:"360px 1fr", gap:28 }}>
             {/* สรุปทางซ้าย */}
             <aside style={{ border:"1px solid var(--line)", borderRadius:8, padding:16 }}>
-              <h3 style={{ margin:"0 0 12px" }}>ห้องเลขที่ {room.room_number}</h3>
+              <h3 style={{ margin:"0 0 12px" }}>{room.room_number}</h3>
               <div style={{ borderRadius:8, overflow:"hidden", marginBottom:12 }}>
                 {hero ? <img src={hero} alt="" style={{ width:"100%", display:"block" }} /> : <div style={{ aspectRatio:"4/3", background:"#f3f3f3" }}/>}
               </div>
 
-              <SummaryRow label="ประเภทห้อง">{room?.room_type?.type_name || "-"}</SummaryRow>
+              <SummaryRow label="ประเภทห้องพัก">{room?.room_type?.type_name || "-"}</SummaryRow>
               <SummaryRow label="วันที่">{checkin} – {checkout} ({nights} คืน)</SummaryRow>
-              <SummaryRow label="จำนวนผู้เข้าพัก">{guests} คน (สูงสุด {capacity})</SummaryRow>
+              <SummaryRow label="จำนวนผู้เข้าพัก">{guests} คน </SummaryRow>
 
               <SummaryRow label="ประเภทเตียง">เตียงใหญ่</SummaryRow>
               <SummaryRow label="จำนวนเตียง">1 เตียง</SummaryRow>
 
               <SummaryRow label="ราคา/คืน">{pricePerNight.toLocaleString()} บาท</SummaryRow>
-              <div style={{ marginTop:12, fontWeight:800, textAlign:"right" }}>รวมทั้งสิ้น ≈ {total.toLocaleString()} บาท</div>
+              <div style={{ marginTop:12, fontWeight:800, textAlign:"right" }}>รวมทั้งสิ้น  {total.toLocaleString()} บาท</div>
               {overCap && <div style={{ color:"crimson", marginTop:6 }}>เกินความจุสูงสุด {capacity} คน</div>}
             </aside>
 
