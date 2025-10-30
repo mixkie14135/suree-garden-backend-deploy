@@ -1,3 +1,4 @@
+// backend/src/modules/payment/banquet/paymentBanquet.controller.js
 const prisma = require('../../../config/prisma');
 const policy = require('../../../config/reservationPolicy');
 

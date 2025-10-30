@@ -1,3 +1,4 @@
+/* frontend/src/styles/global.css*/
 :root{
   --brand:#3c5537;
   --line:#e9e9e9;
@@ -72,9 +73,9 @@ body{
 .heroOverlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.15),rgba(0,0,0,.35));z-index:1;}
 .heroContent{position:absolute;left:60px;bottom:48px;color:#fff;max-width:560px;z-index:2;}
 .heroTitle{font-size:52px;margin:0 0 8px;font-weight:900;text-shadow:0 3px 8px rgba(0,0,0,.35);}
-.heroSubtitle{font-size:20px;line-height:1.5;margin:0 0 18px;text-shadow:0 2px 6px rgba(0,0,0,.3);}
+.heroSubtitle{font-size:20px;line-height:1.5;margin:0 0 30px;text-shadow:0 2px 6px rgba(0,0,0,.3);}
 .heroBtn{
-  background:var(--accent-500);color:#fff;border:1px solid var(--accent-700);
+  background:#7C813E;color:#fff;
   border-radius:10px;padding:12px 20px;font-weight:800;cursor:pointer;transition:.15s;
 }
 .heroBtn:hover{background:var(--accent-700);transform:translateY(-1px);box-shadow:0 6px 16px rgba(0,0,0,.18);}
@@ -93,7 +94,7 @@ body{
 .contactTitle{margin:0 0 14px;font-size:16px;font-weight:800;}
 .contactList{margin:0;padding:0;list-style:none;display:grid;gap:12px;}
 .contactList li{display:flex;gap:10px;align-items:flex-start;color:#444;}
-.bottomBar{background:var(--brand);color:#eef0eb;padding:18px 0;}
+.bottomBar{background:#7C813E;color:#eef0eb;padding:18px 0;}
 .bottomBar .container{text-align:center;font-size:14px;}
 
 /* -------------------- Responsive -------------------- */
@@ -474,4 +475,173 @@ body{
   .stp{flex-direction:column; align-items:flex-start; gap:10px;}
   .stp-item{width:100%; text-align:left;}
   .stp-line,.stp-lineFill{ display:none; }
+}
+
+/* ===== Tabs (ตัวกรอง) ===== */
+.browseTabs { display:flex; gap:10px; }
+.browseTab{
+  border:1px solid var(--line);
+  background:#fff; color:#333; border-radius:999px;
+  padding:8px 14px; font-weight:800; cursor:pointer;
+}
+.browseTab.is-active{
+  background:#7c813e; color:#fff; border-color:#6c7a3a;
+  box-shadow:0 6px 16px rgba(111,140,71,.22);
+}
+
+/* ===== Pagination numbers ===== */
+.pageIndicator{
+  border:1px solid #a1a85a; padding:14px 24px; border-radius:4px;
+  font-size:24px; font-weight:700;
+}
+.numPageBtn{
+  width:64px; height:64px; border:1px solid #a1a85a; background:#fff; cursor:pointer;
+  font-size:28px; font-weight:700; border-radius:4px;
+}
+.numPageBtn.is-active{
+  background:#7c813e; color:#fff; border-color:#7c813e;
+}
+
+/* Pagination (full-width center) */
+.paginationWrap{
+  width:100%;
+  max-width:none;       /* ไม่ล็อก 1140px */
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:16px;
+  margin:48px auto 56px; /* ดันให้ห่างจากลิสต์ขึ้นมา */
+}
+
+/* =================== Featured Grid (หน้าแรก) =================== */
+.featSection { /* โซน "ค้นพบสุรีย์การ์เด้น" */ }
+
+.featGridCustom {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: 24px;
+  margin-top: 24px;
+}
+
+/* รูปด้านซ้าย */
+.featCard--small {
+  flex: 0 0 400px;  /* กำหนดความกว้างตรงตามขนาดจริง */
+  height: 500px;
+}
+
+/* รูปด้านขวา */
+.featCard--large {
+  flex: 0 0 600px;
+  height: 500px;
+}
+
+/* ใช้ร่วมกัน */
+.featCard {
+  margin: 0;
+  overflow: hidden;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--line);
+}
+
+.featImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* แถวล่าง: รูปแนวนอน */
+.featWideWrap {
+  margin-top: 32px;
+}
+.featWideImg {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+  max-width: 1060px;   /* ให้ขนาดใกล้ภาพจริง */
+  aspect-ratio: 1060 / 648;
+  margin: 0 auto;      /* จัดให้อยู่กลาง container */
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .featGridCustom {
+    flex-direction: column;
+    align-items: center;
+  }
+  .featCard--small,
+  .featCard--large {
+    width: 100%;
+    height: auto;
+  }
+  .featWideImg {
+    max-width: 100%;
+  }
+}
+
+/* ================== HOME FULL – fixed 450x300 + gap 98 ================== */
+
+/* Hero (ตาม Figma 1440x536) */
+.homeFull .homeHero{
+  position:relative; height:536px; max-height:536px; overflow:hidden;
+  border-bottom:1px solid var(--line);
+}
+.homeFull .homeHero img{ width:100%; height:100%; object-fit:cover; object-position:center 40%; display:block; }
+.homeFull .homeHeroShade{ position:absolute; inset:0; background:linear-gradient(180deg,rgba(0,0,0,.12),rgba(0,0,0,.28)); }
+
+.homeFull .homeTitle{
+  margin:28px 0 18px; font-size:22px; font-weight:900; text-align:center; color:#2b2b2b;
+}
+
+/* แถวมาตรฐาน: รูปซ้าย (450x300) — เนื้อหาขวา (gap 98px) */
+.homeFull .homeRow{
+  display:flex; align-items:flex-start; gap:98px;
+  margin:22px 0;
+}
+
+/* รูปทั้งหมด (ยกเว้น hero) = 450x300 */
+.homeFull .homeThumb{
+  flex:0 0 450px; width:450px; height:300px;
+  border:1px solid var(--line); border-radius:var(--radius);
+  overflow:hidden; box-shadow:var(--shadow); position:relative;
+}
+.homeFull .homeThumb img{ width:100%; height:100%; object-fit:cover; display:block; }
+
+/* ปิดลูกศร/overlay ที่อาจมาจากหน้าอื่น */
+.homeFull .homeThumb::before,
+.homeFull .homeThumb::after,
+.homeFull .roomImg::before,
+.homeFull .roomImg::after { content:none !important; display:none !important; }
+
+/* กล่องข้อมูลด้านขวา + tilt effect */
+.homeFull .homeInfo{ flex:1 1 auto; position:relative; transform-style:preserve-3d; }
+.homeFull .chipRow{ display:flex; gap:8px; flex-wrap:wrap; }
+.homeFull .chip{
+  display:inline-block; padding:6px 10px; border-radius:999px;
+  background:#fff; border:1px solid var(--line); color:#555; font-weight:700; font-size:12px;
+}
+.homeFull .homeCardTitle{ margin:10px 0 6px; font-size:18px; font-weight:900; color:#1f1f1f; }
+.homeFull .homeCardDesc{ margin:0; color:#555; line-height:1.7; }
+
+/* tilt highlight */
+.homeFull .tiltGlow{
+  pointer-events:none; position:absolute; inset:0;
+  background: radial-gradient(320px circle at var(--mx,50%) var(--my,50%),
+              rgba(255,255,255,.22), rgba(255,255,255,0) 50%);
+  opacity:0; transition:opacity .15s ease;
+}
+.homeFull .homeInfo:hover .tiltGlow{ opacity:.9; }
+
+/* ระยะส่วนลิสต์ห้องโดยรวม */
+.homeFull .homeRooms{ padding:8px 0 56px; }
+
+/* Responsive */
+@media (max-width: 1024px){
+  .homeFull .homeRow{ flex-direction:column; gap:16px; }
+  .homeFull .homeThumb{ width:100%; max-width:450px; height:auto; aspect-ratio:3/2; }
 }

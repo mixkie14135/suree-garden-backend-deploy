@@ -1,3 +1,4 @@
+// backend/src/utils/code_reservation.js
 exports.genReservationCode = (len = 8) => {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let out = '';

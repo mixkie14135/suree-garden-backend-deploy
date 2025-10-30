@@ -1,4 +1,4 @@
-// controllers/reservationRoom.controller.js
+// backend/src/modules/reservation/room/reservationRoom.controller.js
 const prisma = require('../../../config/prisma');
 const { genReservationCode } = require('../../../utils/code_reservation');
 const {
@@ -296,7 +296,7 @@ exports.getReservationRoom = async (req, res) => {
       expires_at: r.expires_at,
       payment_due_at: r.payment_due_at,
       pay_account_snapshot: r.pay_account_snapshot || null,
-      last_payment_status: r.payment_room?.[0]?.payment_status || 'none',
+      last_payment_status: r.payment_room?.[0]?.payment_status || 'unpaid', // ✅ default
       paid_at: r.payment_room?.[0]?.paid_at || null,
       amount: r.payment_room?.[0]?.amount || null,
       room: { room_id: r.room_id, room_number: r.room.room_number },
@@ -308,11 +308,7 @@ exports.getReservationRoom = async (req, res) => {
 };
 
 // =========================
-/** UPDATE (admin):
- *  - อัปเดตสถานะ/ช่วงวัน
- *  - ถ้าแก้วัน → เช็กซ้อนทับใหม่ (นับเฉพาะ confirmed/checked_in และ pending ที่ยังไม่หมดเวลา)
- *  - อัปเดต snapshot ติดต่อ (contact_*) ถ้ามีส่งมา
- */
+// UPDATE (admin)
 // =========================
 exports.updateReservationRoom = async (req, res) => {
   try {
@@ -323,12 +319,10 @@ exports.updateReservationRoom = async (req, res) => {
 
     const { status, checkin_date, checkout_date, phone, email, contact_name } = req.body;
 
-    // validate สถานะ
     if (status && !ALLOWED_STATUSES.includes(status)) {
       return res.status(400).json({ message: 'invalid status' });
     }
 
-    // ใช้รายการปัจจุบันเป็นฐาน
     const current = await prisma.reservation_room.findUnique({
       where: { reservation_id: id }
     });
@@ -353,7 +347,6 @@ exports.updateReservationRoom = async (req, res) => {
       data.checkout_date = toUtcMidnight(parsedOut);
     }
 
-    // ถ้าแก้วัน → ตรวจลำดับวันและกันทับซ้อน
     if (data.checkin_date || data.checkout_date) {
       const newIn  = data.checkin_date  || current.checkin_date;
       const newOut = data.checkout_date || current.checkout_date;
@@ -441,13 +434,18 @@ exports.getReservationRoomStatusByCode = async (req, res) => {
       include: {
         room: { select: { room_id: true, room_number: true } },
         customer: { select: { customer_id: true, first_name: true, last_name: true } },
-        payment_room: { orderBy: { payment_id: 'desc' }, take: 1 }
+        payment_room: { 
+          orderBy: { payment_id: 'desc' }, 
+          take: 1,
+          select: { payment_status: true, paid_at: true, amount: true, slip_url: true }
+        }
       }
     });
 
     if (!reservation) return res.status(404).json({ message: 'Reservation not found' });
 
     const lastPayment = reservation.payment_room?.[0] || null;
+    const lastPaymentStatus = lastPayment ? lastPayment.payment_status : 'unpaid'; // ✅ default
 
     res.json({
       code: reservation.reservation_code,
@@ -457,9 +455,10 @@ exports.getReservationRoomStatusByCode = async (req, res) => {
       pay_account_snapshot: reservation.pay_account_snapshot || null,
       checkin_date: reservation.checkin_date,
       checkout_date: reservation.checkout_date,
-      last_payment_status: lastPayment ? lastPayment.payment_status : 'none',
+      last_payment_status: lastPaymentStatus,
       amount: lastPayment ? lastPayment.amount : null,
       paid_at: lastPayment ? lastPayment.paid_at : null,
+      slip_url: lastPayment ? lastPayment.slip_url : null,
       room: reservation.room,
       customer: {
         id: reservation.customer.customer_id,

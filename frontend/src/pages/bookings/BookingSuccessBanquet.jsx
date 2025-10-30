@@ -1,16 +1,46 @@
-// src/pages/bookings/BookingSuccess.jsx
+// frontend/src/pages/bookings/BookingSuccessBanquet.jsx
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useSearchParams, useNavigate } from "react-router-dom";
 import Navbar from "../../components/Navbar";
 import Stepper from "../../components/Stepper";
-import { reservationApi } from "../../lib/api";
+import { reservationBanquetApi } from "../../lib/api";
 
-export default function BookingSuccess() {
+function fmtDate(d) {
+  if (!d) return "-";
+  const x = new Date(d);
+  return isNaN(x) ? "-" : x.toLocaleDateString("th-TH");
+}
+function fmtTime(t) {
+  const m = String(t || "").match(/(\d{2}):(\d{2})/);
+  return m ? `${m[1]}:${m[2]}` : (t || "-");
+}
+function diffHours(_event_date, start_time, end_time) {
+   if (!start_time || !end_time) return 0;
+   const m1 = String(start_time).match(/(\d{2}):(\d{2})/);
+   const m2 = String(end_time).match(/(\d{2}):(\d{2})/);
+   if (!m1 || !m2) return 0;
+   const sh = parseInt(m1[1], 10), sm = parseInt(m1[2], 10);
+   const eh = parseInt(m2[1], 10), em = parseInt(m2[2], 10);
+   const minutes = (eh * 60 + em) - (sh * 60 + sm);
+   const h = minutes / 60;
+   // เราบังคับให้เลือกเป็นชั่วโมงถ้วนอยู่แล้ว ค่านี้ควรเป็นจำนวนเต็ม
+   return h > 0 ? h : 0;
+}
+function thaiStatus(s){
+  switch (s) {
+    case "pending": return "รอชำระ/รอตรวจสอบ";
+    case "confirmed": return "ยืนยันแล้ว";
+    case "cancelled": return "ยกเลิก";
+    case "expired": return "หมดเวลา";
+    default: return s || "-";
+  }
+}
+
+export default function BookingSuccessBanquet() {
   const nav = useNavigate();
   const { state } = useLocation();
   const [sp] = useSearchParams();
 
-  // รับรหัสจาก state หรือ query ?code=
   const initCode = state?.reservation_code || sp.get("code") || "";
   const [code] = useState(initCode);
 
@@ -18,59 +48,30 @@ export default function BookingSuccess() {
   const [err, setErr] = useState("");
   const [data, setData] = useState(null);
 
-  // ดึงรายละเอียดการจองเพื่อสรุป (รองรับรีเฟรช + normalize payload)
   useEffect(() => {
     let alive = true;
     if (!code) return;
     setLoading(true);
     setErr("");
-    reservationApi
+    reservationBanquetApi
       .getStatusByCode(code)
       .then((res) => {
         if (!alive) return;
-        const payload =
-          res && typeof res === "object" && "data" in res && res.data ? res.data : res;
-        setData(payload);
+        setData(res && res.data ? res.data : res);
       })
       .catch((e) => alive && setErr(e?.message || "โหลดข้อมูลการจองไม่สำเร็จ"))
       .finally(() => alive && setLoading(false));
-    return () => {
-      alive = false;
-    };
+    return () => { alive = false; };
   }, [code]);
 
-  const nights = useMemo(() => {
-    if (!data?.checkin_date || !data?.checkout_date) return 0;
-    const ci = new Date(data.checkin_date);
-    const co = new Date(data.checkout_date);
-    const d = (co - ci) / 86400000;
-    return d > 0 ? d : 0;
+  const hours = useMemo(() => {
+    return diffHours(data?.event_date, data?.start_time, data?.end_time);
   }, [data]);
 
-  // helper
-  function fmtDate(d) {
-    if (!d) return "-";
-    const x = new Date(d);
-    if (isNaN(x)) return "-";
-    return x.toLocaleDateString("th-TH");
-  }
-  function thaiStatus(s){
-    switch (s) {
-      case "pending": return "รอชำระ/รอตรวจสอบ";
-      case "confirmed": return "ยืนยันแล้ว";
-      case "checked_in": return "เข้าพักแล้ว";
-      case "checked_out": return "เช็คเอาท์แล้ว";
-      case "cancelled": return "ยกเลิก";
-      case "expired": return "หมดเวลา";
-      default: return s || "-";
-    }
-  }
-
-  // ปุ่มลัด
   const goHome = () => nav("/", { replace: true });
   const viewStatus = () => {
     if (code) {
-      nav(`/bookings/status?code=${encodeURIComponent(code)}`, {
+      nav(`/bookings/status-banquet?code=${encodeURIComponent(code)}`, {
         state: { from: "success", reservation_code: code },
       });
     }
@@ -80,10 +81,8 @@ export default function BookingSuccess() {
     <>
       <Navbar />
       <main className="container" style={{ padding:"28px 0 60px" }}>
-        {/* ขั้นตอนที่ 3 */}
         <Stepper step={3} />
 
-        {/* หัวข้อสำเร็จ */}
         <div className="bpCard" style={{ marginBottom: 16, textAlign:"center" }}>
           <h2 style={{ margin:"0 0 8px" }}>ส่งหลักฐานการชำระเงินเรียบร้อย</h2>
           <p style={{ margin:0, color:"#555" }}>
@@ -92,26 +91,24 @@ export default function BookingSuccess() {
           </p>
         </div>
 
-        {/* สรุปรายการ */}
         {loading ? (
           <div className="loading">กำลังโหลด...</div>
         ) : err ? (
           <div className="emptyBox" style={{ color:"crimson" }}>{err}</div>
         ) : data ? (
           <div className="bpCard">
-            <h3 className="bpCardTitle">สรุปการจอง</h3>
+            <h3 className="bpCardTitle">สรุปการจองจัดเลี้ยง</h3>
             <dl className="bpList">
               <div><dt>รหัสการจอง</dt><dd>{data.code}</dd></div>
-              <div><dt>ห้อง</dt><dd>{data.room?.room_number || "-"}</dd></div>
-              <div><dt>ช่วงวัน</dt><dd>{fmtDate(data.checkin_date)} – {fmtDate(data.checkout_date)} ({nights} คืน)</dd></div>
-              <div><dt>สถานะ</dt><dd>{thaiStatus(data.status)}</dd></div>
+              <div><dt>ห้อง</dt><dd>{data?.banquet?.name || "-"}</dd></div>
+              <div><dt>วัน–เวลา</dt><dd>{fmtDate(data?.event_date)} ({fmtTime(data?.start_time)}–{fmtTime(data?.end_time)}) • {hours} ชม.</dd></div>
+              <div><dt>สถานะ</dt><dd>{thaiStatus(data?.status)}</dd></div>
             </dl>
           </div>
         ) : (
           <div className="emptyBox">กรุณาบันทึกรหัสการจองไว้เพื่อตรวจสอบสถานะภายหลัง</div>
         )}
 
-        {/* ปุ่มนำทาง */}
         <div style={{ display:"flex", gap:10, marginTop:16, justifyContent:"center" }}>
           <button className="btnGhost" onClick={goHome}>กลับหน้าหลัก</button>
           {code ? (

@@ -1,3 +1,4 @@
+// frontend/src/pages/bookings/bookingroom.jsx
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import Navbar from "../../components/Navbar";

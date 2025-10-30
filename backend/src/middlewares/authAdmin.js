@@ -1,3 +1,4 @@
+// backend/src/middlewares/authAdmin.js
 const jwt = require('jsonwebtoken');
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
 

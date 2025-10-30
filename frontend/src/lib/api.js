@@ -29,44 +29,60 @@ async function handle(res) {
   throw new Error(msg);
 }
 
-// ---------- JSON requests ----------
-export async function apiGet(path, params) {
+// ---------- core fetch helpers (รองรับ init.signal + no-store) ----------
+function mergeHeaders(base, extra) {
+  return extra ? { ...base, ...extra } : base;
+}
+
+export async function apiGet(path, params, init = {}) {
   const qs = params ? "?" + new URLSearchParams(params).toString() : "";
   const res = await fetch(`${API_BASE}${path}${qs}`, {
+    method: "GET",
     credentials: "include",
-    headers: authHeader(),
+    headers: mergeHeaders(authHeader(), init.headers),
+    cache: "no-store",
+    signal: init.signal,
   });
   return handle(res);
 }
-export async function apiPost(path, body) {
+
+export async function apiPost(path, body, init = {}) {
   const res = await fetch(`${API_BASE}${path}`, {
     method: "POST",
     credentials: "include",
-    headers: jsonHeaders(),
+    headers: mergeHeaders(jsonHeaders(), init.headers),
     body: JSON.stringify(body || {}),
+    cache: "no-store",
+    signal: init.signal,
   });
   return handle(res);
 }
-export async function apiPut(path, body) {
+
+export async function apiPut(path, body, init = {}) {
   const res = await fetch(`${API_BASE}${path}`, {
     method: "PUT",
     credentials: "include",
-    headers: jsonHeaders(),
+    headers: mergeHeaders(jsonHeaders(), init.headers),
     body: JSON.stringify(body || {}),
+    cache: "no-store",
+    signal: init.signal,
   });
   return handle(res);
 }
-export async function apiDelete(path) {
+
+export async function apiDelete(path, init = {}) {
   const res = await fetch(`${API_BASE}${path}`, {
     method: "DELETE",
     credentials: "include",
-    headers: authHeader(),
+    headers: mergeHeaders(authHeader(), init.headers),
+    cache: "no-store",
+    signal: init.signal,
   });
   return handle(res);
 }
 
 // ---------- Upload (multipart/form-data) ----------
-export async function apiUpload(path, file, fieldName = "file", extraFields = {}) {
+export async function apiUpload(path, file, fieldName = "file", extraFields = {}, init = {}) {
   const fd = new FormData();
   fd.append(fieldName, file);
   for (const [k, v] of Object.entries(extraFields || {})) fd.append(k, v);
@@ -74,10 +90,10 @@ export async function apiUpload(path, file, fieldName = "file", extraFields = {}
   const res = await fetch(`${API_BASE}${path}`, {
     method: "POST",
     credentials: "include",
-    headers: {
-      ...authHeader(),
-    },
+    headers: mergeHeaders({ ...authHeader() }, init.headers), // อย่าตั้ง Content-Type เอง
     body: fd,
+    cache: "no-store",
+    signal: init.signal,
   });
   return handle(res);
 }
@@ -98,97 +114,144 @@ export function fileUrl(p) {
   return `${API_ORIGIN}${rel}`;
 }
 
-/* ===================== Banquet API (NEW) ===================== */
+/* ===================== Banquet API ===================== */
 export const banquetApi = {
-  // list + include=images (backend รองรับ /banquets?include=images หรือจะไม่ใส่ก็ได้)
-  async list(params = {}) {
-    const include = params.include || "images";
-    const res = await apiGet("/banquets", { include });
+  async list({ include = "images", page, limit, capacityGte } = {}, init) {
+    const params = { include };
+    if (page) params.page = page;
+    if (limit) params.limit = limit;
+    if (capacityGte != null) params.capacityGte = capacityGte;
+
+    const res = await apiGet("/banquets", params, init);
+    if (Array.isArray(res)) {
+      return { page: 1, limit: res.length, total: res.length, totalPages: 1, items: res };
+    }
     return res;
   },
-  async get(id, params = {}) {
-    return apiGet(`/banquets/${id}`, params);
+  async available({ date, start, end, capacityGte, include = "images", page, limit } = {}, init) {
+    const params = { date, start, end, include };
+    if (capacityGte != null) params.capacityGte = capacityGte;
+    if (page) params.page = page;
+    if (limit) params.limit = limit;
+    return apiGet("/banquets/available", params, init);
   },
-  async create(payload) {
-    return apiPost("/banquets", payload);
+  async detail(id, include, init) {
+    const params = include ? { include } : undefined;
+    return apiGet(`/banquets/${id}`, params, init);
   },
-  async update(id, payload) {
-    return apiPut(`/banquets/${id}`, payload);
-  },
-  async remove(id) {
-    return apiDelete(`/banquets/${id}`);
-  },
-
-  // images
-  async listImages(banquetId) {
-    const res = await apiGet(`/banquets/${banquetId}/images`);
-    // controller คืน { status:'ok', data:[...] } => normalize
+  async create(payload, init) { return apiPost("/banquets", payload, init); },
+  async update(id, payload, init) { return apiPut(`/banquets/${id}`, payload, init); },
+  async remove(id, init) { return apiDelete(`/banquets/${id}`, init); },
+  async listImages(banquetId, init) {
+    const res = await apiGet(`/banquets/${banquetId}/images`, undefined, init);
     return toArray(res);
   },
-  async uploadImage(banquetId, file) {
-    return apiUpload(`/banquets/${banquetId}/images`, file, "file");
+  async uploadImage(banquetId, file, init) {
+    return apiUpload(`/banquets/${banquetId}/images`, file, "file", {}, init);
   },
-  async deleteImage(banquetId, imageId) {
-    return apiDelete(`/banquets/${banquetId}/images/${imageId}`);
+  async deleteImage(banquetId, imageId, init) {
+    return apiDelete(`/banquets/${banquetId}/images/${imageId}`, init);
   },
 };
 
 /* ===================== Room API (PUBLIC) ===================== */
 export const roomApi = {
-  list(params = {}) {
-    return apiGet("/rooms", params);
+  /**
+   * ดึงลิสต์ห้องแบบมี pagination
+   * รองรับ include, page, limit, typeId (กรองตามประเภท)
+   * และ normalize ถ้า backend คืน array เปล่า ๆ
+   */
+  async list(params = {}, init) {
+    const q = { include: "images,type", page: 1, limit: 10, ...params };
+    const res = await apiGet("/rooms", q, init);
+    if (Array.isArray(res)) {
+      return { page: q.page, limit: res.length, total: res.length, totalPages: 1, items: res };
+    }
+    return res;
   },
-  typeBySlug(slug) {
-    return apiGet(`/room-types/slug/${encodeURIComponent(slug)}`);
-  },
-  listTypes() {
-    return apiGet("/room-types");
-  },
-  // ✅ ดึงห้องเดี่ยว + include
-  detail(id, include = "images,type") {
-    return apiGet(`/rooms/${id}`, { include });
-  },
-  // ✅ เช็คความว่างห้องช่วงวัน
-  availability(id, checkin, checkout) {
-    return apiGet(`/rooms/${id}/availability`, { checkin, checkout });
+
+  typeBySlug(slug, init) { return apiGet(`/room-types/slug/${encodeURIComponent(slug)}`, undefined, init); },
+  listTypes(init) { return apiGet("/room-types", undefined, init); },
+  detail(id, include = "images,type", init) { return apiGet(`/rooms/${id}`, { include }, init); },
+  availability(id, checkin, checkout, init) {
+    return apiGet(`/rooms/${id}/availability`, { checkin, checkout }, init);
   },
 };
 
-// ---- ปรับ bookingApi ให้ถูกเส้นทาง & base ----
+// ---- Booking API (Room) ----
 export const bookingApi = {
-  checkRoomAvailability(roomId, checkin, checkout) {
-    return apiGet(`/rooms/${roomId}/availability`, { checkin, checkout });
+  checkRoomAvailability(roomId, checkin, checkout, init) {
+    return apiGet(`/rooms/${roomId}/availability`, { checkin, checkout }, init);
   },
-  // เส้นทาง public จาก reservationRoom.routes.js
-  createRoomReservation(payload) {
-    return apiPost("/reservations/room", payload);
+  createRoomReservation(payload, init) {
+    return apiPost("/reservations/room", payload, init);
   },
 };
 
-
-
-
-// สถานะการจองจาก reservation_code
+// ---- Reservation status (Room) ----
 export const reservationApi = {
-  getStatusByCode(code) {
-    return apiGet("/reservations/room/status", { code });
+  getStatusByCode(code, init) {
+    return apiGet("/reservations/room/status", { code }, init);
   },
 };
 
-// ---- Payments (match backend) ----
+// ---- Payments (Room) ----
 export const paymentApi = {
-  async uploadRoomSlip({ reservation_code, amount, file }) {
+  async uploadRoomSlip({ reservation_code, amount, file }, init) {
     const fd = new FormData();
     fd.append("reservation_code", reservation_code);
     if (amount != null) fd.append("amount", String(amount));
-    if (file) fd.append("slip", file, file.name); // <<< field name ต้องเป็น 'slip'
+    if (file) fd.append("slip", file, file.name);
 
-    const res = await fetch(`${API_BASE}/payments/room/upload-slip`, { // <<< path ต้องตรง
+    const res = await fetch(`${API_BASE}/payments/room/upload-slip`, {
       method: "POST",
       credentials: "include",
-      headers: { ...authHeader() }, // อย่าเซ็ต 'Content-Type' เอง ปล่อยให้ browser กำหนด multipart boundary
+      headers: mergeHeaders({ ...authHeader() }, init?.headers),
       body: fd,
+      cache: "no-store",
+      signal: init?.signal,
     });
     return handle(res);
+  },
+};
+
+// ---- Booking API (Banquet) ----
+export const bookingBanquetApi = {
+  create(payload, init) {
+    return apiPost("/reservations/banquet", payload, init);
+  },
+};
+
+// ---- Reservation status (Banquet) ----
+export const reservationBanquetApi = {
+  getStatusByCode(code, init) {
+    return apiGet("/reservations/banquet/status", { code }, init);
+  },
+};
+
+// ---- Payments (Banquet) ----
+export const paymentBanquetApi = {
+  async uploadSlip({ reservation_code, amount, file }, init) {
+    const fd = new FormData();
+    fd.append("reservation_code", reservation_code);
+    if (amount != null) fd.append("amount", String(amount));
+    if (file) fd.append("slip", file, file.name);
+
+    const res = await fetch(`${API_BASE}/payments/banquet/upload-slip`, {
+      method: "POST",
+      credentials: "include",
+      headers: mergeHeaders({ ...authHeader() }, init?.headers),
+      body: fd,
+      cache: "no-store",
+      signal: init?.signal,
+    });
+    return handle(res);
+  },
+};
+
+/* ===================== Reservation Resolver ===================== */
+export const reservationResolverApi = {
+  resolve(code, init) {
+    return apiGet("/reservations/resolve", { code }, init);
   },
 };

@@ -1,18 +1,17 @@
-// src/pages/HomeFull.jsx
 import React, { useState, useRef, useCallback } from "react";
-import veranda2 from "../assets/veranda2.jpg";
-import pond from "../assets/pond.jpg";
-import PremierDoubleRoom from "../assets/PremierDoubleRoom.jpg";
-import DeluxeDouble from "../assets/DeluxeDouble.jpg";
-import DeluxeTwin from "../assets/DeluxeTwin.jpg";
-import SuperiorDoubleRoom from "../assets/SuperiorDoubleRoom.jpg";
-import DeluxeTriple from "../assets/DeluxeTriple.jpg";
-import StandardVilla from "../assets/StandardVilla.jpg";
-import FamilySuite from "../assets/FamilySuite.jpg";
-import BanquetRoom from "../assets/BanquetRoom.jpg";
+import hero from "../assets/hero_homefull.jpg";
+import view from "../assets/Home_full_view.jpg";
+import DeluxeDouble from "../assets/ห้องดีลักซ์เตียงใหญ่.jpg";
+import PremierDoubleRoom from "../assets/ห้องพรีเมียมเตียงใหญ่.jpg";
+import DeluxeTwin from "../assets/ห้องดีลักซ์เตียงแฝด.jpg";
+import SuperiorDoubleRoom from "../assets/ซูพีเรีย เตียงใหญ่.jpg";
+import DeluxeTriple from "../assets/ห้องดีลักซ์สำหรับ 3 ท่าน.jpg";
+import StandardVilla from "../assets/ห้องพักบ้านเดี่ยว.jpg";
+import FamilySuite from "../assets/ห้องพักสำหรับครอบครัว.jpg";
+import BanquetRoom from "../assets/ห้องจัดเลี้ยง.png";
 
 const ROOMS = [
-  { id: 1, img: DeluxeDouble,       tags: ["ห้องพัก", "ห้องดีลักซ์เตียงใหญ่"],   title: "ห้องดีลักซ์เตียงใหญ่",   desc: "ห้องดีลักซ์เตียงใหญ่ เหมาะกับคู่รัก/เพื่อน 1 คู่ บรรยากาศ เงียบสงบ เหมาะแก่การพักผ่อน มีสิ่งอำนวยความสะดวกครบครัน และทำเลที่ตั้งรายล้อมด้วยบรรยากาศธรรมชาติบ่อบัวและสวนสไตล์ไทย" },
+  { id: 1, img: DeluxeDouble,       tags: ["ห้องพัก", "ห้องดีลักซ์เตียงใหญ่"],   title: "ห้องดีลักซ์เตียงใหญ่",   desc: "ห้องดีลักซ์เตียงใหญ่ เหมาะกับคู่รัก/เพื่อน 1 คู่ บรรยากาศเงียบสงบ เหมาะแก่การพักผ่อน มีสิ่งอำนวยความสะดวกครบครัน และทำเลที่ตั้งรายล้อมด้วยบรรยากาศธรรมชาติบ่อบัวและสวนสไตล์ไทย" },
   { id: 2, img: PremierDoubleRoom,  tags: ["ห้องพัก", "ห้องพรีเมียมเตียงใหญ่"], title: "ห้องพรีเมียมเตียงใหญ่", desc: "ห้องพรีเมียมเตียงใหญ่ กว้างขวาง โปร่งสบาย เหมาะกับนักท่องเที่ยวและครอบครัวขนาดเล็ก เน้นความเป็นส่วนตัว พร้อมพื้นที่นั่งเล่นหน้าห้องและหน้าต่างบานใหญ่" },
   { id: 3, img: DeluxeTwin,         tags: ["ห้องพัก", "ห้องดีลักซ์เตียงแฝด"],    title: "ห้องดีลักซ์เตียงแฝด",    desc: "เหมาะสำหรับเพื่อน 2 คนที่อยากได้เตียงแยก วิวด้านหน้าเป็นสระบัวและสวนสวย อากาศถ่ายเทดี ให้ความรู้สึกสบายในทุกช่วงเวลา" },
   { id: 4, img: SuperiorDoubleRoom, tags: ["ห้องพัก", "ซูพีเรีย เตียงใหญ่"],     title: "ซูพีเรีย เตียงใหญ่",     desc: "ห้องซูพีเรียเตียงใหญ่ ให้ความสะดวกสบายครบครัน เหมาะกับผู้เข้าพักที่ต้องการความเรียบง่ายแต่ครบเครื่อง" },
@@ -22,62 +21,56 @@ const ROOMS = [
   { id: 8, img: BanquetRoom,        tags: ["ห้องจัดเลี้ยง", "สังสรรค์"],         title: "ห้องจัดเลี้ยง",         desc: "ห้องจัดเลี้ยงสุรีย์การ์เด้น รีสอร์ทมีพื้นที่กว้างขวาง ตกแต่งเรียบง่ายครบครัน พร้อมโต๊ะ เก้าอี้ และระบบเสียง เหมาะสำหรับงานเลี้ยง งานแต่งงาน หรือประชุมกลุ่มในบรรยากาศสะดวกสบายและเป็นกันเอง" },
 ];
 
-// ============= การ์ดเด้ง/เอียงตามเมาส์ =============
-function RoomCard({ room }) {
+function TiltBox({ children, className }) {
   const ref = useRef(null);
   const [style, setStyle] = useState({});
 
-  const clamp = (v, min, max) => Math.max(min, Math.min(v, max));
-
   const onMove = useCallback((e) => {
-    const el = ref.current;
-    if (!el) return;
+    const el = ref.current; if (!el) return;
     const r = el.getBoundingClientRect();
-    const px = (e.clientX - r.left) / r.width;  // 0..1
-    const py = (e.clientY - r.top) / r.height;  // 0..1
-
-    const TILT = 10;   // องศาเอียงสูงสุด
-    const SCALE = 1.02;
-
-    const rx = (0.5 - py) * TILT;   // rotateX
-    const ry = (px - 0.5) * TILT;   // rotateY
-
-    // เก็บตำแหน่งเมาส์ลง CSS var ด้วย เอาไปทำแสงไฮไลท์
+    const px = (e.clientX - r.left) / r.width;
+    const py = (e.clientY - r.top) / r.height;
+    const TILT = 8;
+    const rx = (0.5 - py) * TILT;
+    const ry = (px - 0.5) * TILT;
     setStyle({
-      transform: `perspective(900px) rotateX(${rx}deg) rotateY(${ry}deg) scale(${SCALE})`,
-      boxShadow: `0 14px 36px rgba(0,0,0,${clamp(Math.abs(rx) + Math.abs(ry), 0, TILT) / (TILT * 6) + 0.08})`,
+      transform: `perspective(900px) rotateX(${rx}deg) rotateY(${ry}deg)`,
       "--mx": `${px * 100}%`,
       "--my": `${py * 100}%`,
     });
   }, []);
-
-  const onLeave = useCallback(() => {
-    setStyle({ transform: "translateZ(0)", boxShadow: "0 8px 22px rgba(0,0,0,.06)" });
-  }, []);
+  const onLeave = useCallback(() => setStyle({ transform: "translateZ(0)" }), []);
 
   return (
-    <article
+    <div
       ref={ref}
-      className="roomCard tiltCard"
+      className={className}
       onMouseMove={onMove}
       onMouseLeave={onLeave}
       style={style}
     >
-      <div className="roomImg">
+      {children}
+      <span className="tiltGlow" aria-hidden />
+    </div>
+  );
+}
+
+function RoomRow({ room }) {
+  return (
+    <article className="homeRow">
+      <div className="homeThumb">
         <img src={room.img} alt={room.title} />
       </div>
-      <div className="roomInfo">
+
+      <TiltBox className="homeInfo">
         <div className="chipRow">
           {room.tags.map((t, i) => (
             <span className="chip" key={i}>{t}</span>
           ))}
         </div>
-        <h3 className="roomTitle">{room.title}</h3>
-        <p className="roomDesc">{room.desc}</p>
-      </div>
-
-      {/* แสงไฮไลท์ตามเมาส์ */}
-      <span className="tiltGlow" aria-hidden="true" />
+        <h3 className="homeCardTitle">{room.title}</h3>
+        <p className="homeCardDesc">{room.desc}</p>
+      </TiltBox>
     </article>
   );
 }
@@ -87,37 +80,36 @@ export default function HomeFull() {
     <main className="homeFull">
       {/* Hero */}
       <section className="homeHero">
-        <img src={veranda2} alt="บรรยากาศรีสอร์ท" />
+        <img src={hero} alt="บรรยากาศรีสอร์ท" />
         <div className="homeHeroShade" />
       </section>
 
-      {/* Intro */}
-      <section className="container homeIntro">
+      {/* รวมทุกแถวไว้ใน homeRooms เดียวกัน */}
+      <section className="container homeRooms">
         <h1 className="homeTitle">สุรีย์การ์เด้นรีสอร์ท</h1>
 
-        <div className="introGrid">
-          <div className="introPic">
-            <img src={pond} alt="บรรยากาศรีสอร์ท" />
+        {/* แถวแรก: บรรยากาศ */}
+        <article className="homeRow">
+          <div className="homeThumb">
+            <img src={view} alt="บรรยากาศรีสอร์ท" />
           </div>
-          <div className="introText">
+          <TiltBox className="homeInfo">
             <div className="chipRow">
               <span className="chip">บรรยากาศ</span>
-              <span className="chip">วิวด้านหน้า</span>
+              <span className="chip">มุมวิวทัศน์</span>
             </div>
-            <h3 className="h3">บรรยากาศ</h3>
-            <p>
+            <h3 className="homeCardTitle">บรรยากาศ</h3>
+            <p className="homeCardDesc">
               สุรีย์การ์เด้นรีสอร์ทให้บรรยากาศธรรมชาติรายล้อมด้วยสระบัว
               โค้งสะพานไม้และศาลาไม้ริมน้ำ เหมาะสำหรับผู้ที่ต้องการความผ่อนคลายจากความวุ่นวาย
               และชอบซึมซับบรรยากาศแบบไทยร่วมสมัย
             </p>
-          </div>
-        </div>
-      </section>
+          </TiltBox>
+        </article>
 
-      {/* Rooms */}
-      <section className="container homeRooms">
+        {/* แถวห้องทั้งหมด */}
         {ROOMS.map((r) => (
-          <RoomCard key={r.id} room={r} />
+          <RoomRow key={r.id} room={r} />
         ))}
       </section>
     </main>

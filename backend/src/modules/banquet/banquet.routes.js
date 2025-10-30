@@ -1,3 +1,4 @@
+// backend/src/modules/banquet/banquet.routes.js
 const express = require('express');
 const {
   getBanquets,

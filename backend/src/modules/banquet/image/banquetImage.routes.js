@@ -1,3 +1,4 @@
+// backend/src/modules/banquet/image/banquetImage.routes.js
 const express = require('express');
 const { requireAdminAuth } = require('../../../middlewares/authAdmin');
 const {

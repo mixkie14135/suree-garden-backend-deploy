@@ -1,13 +1,15 @@
-// src/middlewares/ratelimit.js
 const rateLimit = require('express-rate-limit');
 
 // สำหรับเส้นทาง public (จอง, อัปสลิป, เช็คสถานะ)
 const publicRateLimit = rateLimit({
-  windowMs: 60 * 1000, // 1 นาที
-  max: 30,             // 30 req/นาที/ไอพี (ปรับได้)
+  windowMs: 60 * 1000,
+  max: 30,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { status: 'error', message: 'Too many requests, please try again later.' }
+  handler: (req, res, _next) => {
+    console.warn(`[RATE-LIMIT] blocked ip=${req.ip} url=${req.originalUrl}`);
+    res.status(429).json({ status: 'error', message: 'Too many requests, please try again later.' });
+  }
 });
 
 module.exports = { publicRateLimit };
