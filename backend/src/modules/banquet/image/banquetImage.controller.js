@@ -1,14 +1,7 @@
-// src/modules/banquet/image/banquetImage.controller.js
-const path = require('path');
-const fs = require('fs');
+// backend/src/modules/banquet/image/banquetImage.controller.js
 const prisma = require('../../../config/prisma');
-const { UPLOAD_ROOT } = require('../../../utils/uploadPaths');
-
-function toPublicUrl(absPath) {
-  const norm = absPath.replace(/\\/g, '/');
-  const i = norm.lastIndexOf('/uploads/');
-  return i >= 0 ? norm.substring(i) : null;
-}
+const { uploadPublic, objectPathFromPublicUrl, PUB_BUCKET } = require('../../../utils/storage');
+const { supabase } = require('../../../utils/supabase');
 
 exports.listBanquetImages = async (req, res) => {
   const banquetId = Number(req.params.banquet_id);
@@ -32,10 +25,15 @@ exports.createBanquetImage = async (req, res) => {
   }
 
   const description = (req.body.description || '').trim() || null;
-  const image_url = toPublicUrl(req.file.path) || `/uploads/banquets/${banquetId}/${req.file.filename}`;
+
+  const { publicUrl } = await uploadPublic({
+    buffer: req.file.buffer,
+    mimetype: req.file.mimetype,
+    folder: `banquets/${banquetId}`,
+  });
 
   const created = await prisma.banquet_image.create({
-    data: { banquet_id: banquetId, image_url, description }
+    data: { banquet_id: banquetId, image_url: publicUrl, description }
   });
 
   res.status(201).json({ status: 'ok', data: created });
@@ -65,11 +63,13 @@ exports.deleteBanquetImage = async (req, res) => {
   if (!rec) return res.status(404).json({ status: 'error', message: 'image not found' });
 
   try {
-    if (rec.image_url?.startsWith('/uploads/')) {
-      const abs = path.join(UPLOAD_ROOT, rec.image_url.replace('/uploads/', ''));
-      if (abs.startsWith(UPLOAD_ROOT) && fs.existsSync(abs)) fs.unlinkSync(abs);
+    const objectPath = objectPathFromPublicUrl(rec.image_url);
+    if (objectPath) {
+      await supabase.storage.from(PUB_BUCKET).remove([objectPath]);
     }
-  } catch {}
+  } catch (e) {
+    console.warn('supabase remove failed:', e.message);
+  }
 
   await prisma.banquet_image.delete({ where: { image_id: imageId } });
   res.json({ status: 'ok' });
