@@ -23,14 +23,13 @@ import BookingRoom from "./pages/bookings/bookingroom.jsx"; // ✅ เตรี�
 import BookingRoomConfirm from "./pages/bookings/BookingRoomConfirm.jsx";
 import BookingPayment from "./pages/bookings/BookingPayment.jsx";
 import BookingSuccess from "./pages/bookings/BookingSuccess.jsx";
-import BookingStatusEntry from "./pages/bookings/BookingStatusEntry.jsx"; //หน้ากลางตรวจสอบสถานะการจอง
 import BookingStatus from "./pages/bookings/BookingStatus.jsx";
 
 import BookingBanquet from "./pages/bookings/BookingBanquett.jsx";
 import BookingBanquetConfirm from "./pages/bookings/BookingBanquetConfirm.jsx";
 import BookingPaymentBanquet from "./pages/bookings/BookingPaymentBanquet.jsx";
 import BookingSuccessBanquet from "./pages/bookings/BookingSuccessBanquet.jsx";
-import BookingStatusBanquet from "./pages/bookings/BookingStatusBanquet.jsx";
+
 
 
 /* ----------------- Temporary placeholder ----------------- */
@@ -150,9 +149,8 @@ export default function App() {
       <Route path="/bookings/bookingbanquet/:id" element={<BookingBanquet />} />
       <Route path="/bookings/bookingbanquet/:id/confirm" element={<BookingBanquetConfirm />} />
       <Route path="/bookings/payment-banquet" element={<BookingPaymentBanquet />} />
-      <Route path="/bookings/check" element={<BookingStatusEntry />} />
       <Route path="/bookings/success-banquet" element={<BookingSuccessBanquet />} />
-      <Route path="/bookings/status-banquet" element={<BookingStatusBanquet />} />
+      
     
 
 

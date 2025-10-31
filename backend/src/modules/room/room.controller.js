@@ -1,3 +1,4 @@
+// backend/src/modules/room/room.controller.js
 const prisma = require('../../config/prisma.js');
 const policy = require('../../config/reservationPolicy');
 
@@ -11,7 +12,7 @@ exports.getRooms = async (req, res) => {
     const limit = Math.min(Math.max(parseInt(req.query.limit) || 10, 1), 100);
     const skip  = (page - 1) * limit;
 
-    const { status, typeId, minPrice, maxPrice, capacityGte, search, include } = req.query;
+    const { status, typeId, minPrice, maxPrice, capacityGte, search, include, } = req.query;
 
     const where = {};
 

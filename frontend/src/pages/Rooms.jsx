@@ -1,3 +1,4 @@
+// frontend/src/pages/Rooms.jsx
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { roomApi, banquetApi, fileUrl } from "../lib/api";

@@ -1,4 +1,4 @@
-// config/reservationPolicy.js
+// src/config/reservationPolicy.js
 function list(v, def=[]) {
   if (!v) return def;
   return String(v).split(',').map(s => s.trim()).filter(Boolean);

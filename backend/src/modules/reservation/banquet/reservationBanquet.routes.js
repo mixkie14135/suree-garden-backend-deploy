@@ -1,3 +1,4 @@
+// backend/src/modules/reservation/banquet/reservationBanquet.routes.js
 const express = require('express');
 const {
   createReservationBanquet,

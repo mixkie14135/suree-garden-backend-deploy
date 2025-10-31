@@ -1,4 +1,3 @@
-// frontend/src/pages/bookings/BookingSuccessBanquet.jsx
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useSearchParams, useNavigate } from "react-router-dom";
 import Navbar from "../../components/Navbar";
@@ -23,7 +22,6 @@ function diffHours(_event_date, start_time, end_time) {
    const eh = parseInt(m2[1], 10), em = parseInt(m2[2], 10);
    const minutes = (eh * 60 + em) - (sh * 60 + sm);
    const h = minutes / 60;
-   // เราบังคับให้เลือกเป็นชั่วโมงถ้วนอยู่แล้ว ค่านี้ควรเป็นจำนวนเต็ม
    return h > 0 ? h : 0;
 }
 function thaiStatus(s){
@@ -71,7 +69,8 @@ export default function BookingSuccessBanquet() {
   const goHome = () => nav("/", { replace: true });
   const viewStatus = () => {
     if (code) {
-      nav(`/bookings/status-banquet?code=${encodeURIComponent(code)}`, {
+      // 🔄 เปลี่ยนให้ไปหน้าเดียว
+      nav(`/bookings/status?code=${encodeURIComponent(code)}`, {
         state: { from: "success", reservation_code: code },
       });
     }
@@ -113,7 +112,7 @@ export default function BookingSuccessBanquet() {
           <button className="btnGhost" onClick={goHome}>กลับหน้าหลัก</button>
           {code ? (
             <button className="btnPrimary" onClick={viewStatus}>
-              ดูสถานะการชำระเงิน
+              ดูสถานะการจอง
             </button>
           ) : null}
         </div>

@@ -1,3 +1,4 @@
+// src/modules/payment/slipok.controller.js
 const prisma = require('../../config/prisma');
 const policy = require('../../config/reservationPolicy');
 const {

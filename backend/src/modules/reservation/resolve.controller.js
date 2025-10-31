@@ -1,3 +1,4 @@
+// backend/src/modules/reservation/resolve.controller.js
 const prisma = require("../../config/prisma"); // <- ปรับ path ให้ตรงโปรเจกต์คุณ
 
 // GET /api/reservations/resolve?code=XXXX

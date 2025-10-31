@@ -178,6 +178,33 @@ export const roomApi = {
   },
 };
 
+// ---- Payments (Unified SlipOK) ----
+export const paymentApi = {
+  /**
+   * ตรวจและอัปโหลดสลิปผ่าน SlipOK
+   * @param {("room"|"banquet")} type
+   * @param {{reservation_code:string, amount:number, file:File}} params
+   */
+  async verifyAndApply({ type, reservation_code, amount, file }, init) {
+    const fd = new FormData();
+    fd.append("reservation_code", reservation_code);
+    fd.append("amount", String(amount));
+    fd.append("slip", file, file.name);
+
+    const res = await fetch(`${API_BASE}/payments/${type}/verify-and-apply`, {
+      method: "POST",
+      credentials: "include",
+      headers: mergeHeaders({ ...authHeader() }, init?.headers),
+      body: fd,
+      cache: "no-store",
+      signal: init?.signal,
+    });
+    return handle(res);
+  },
+};
+
+
+
 // ---- Booking API (Room) ----
 export const bookingApi = {
   checkRoomAvailability(roomId, checkin, checkout, init) {
@@ -195,26 +222,6 @@ export const reservationApi = {
   },
 };
 
-// ---- Payments (Room) ----
-export const paymentApi = {
-  async uploadRoomSlip({ reservation_code, amount, file }, init) {
-    const fd = new FormData();
-    fd.append("reservation_code", reservation_code);
-    if (amount != null) fd.append("amount", String(amount));
-    if (file) fd.append("slip", file, file.name);
-
-    const res = await fetch(`${API_BASE}/payments/room/upload-slip`, {
-      method: "POST",
-      credentials: "include",
-      headers: mergeHeaders({ ...authHeader() }, init?.headers),
-      body: fd,
-      cache: "no-store",
-      signal: init?.signal,
-    });
-    return handle(res);
-  },
-};
-
 // ---- Booking API (Banquet) ----
 export const bookingBanquetApi = {
   create(payload, init) {
@@ -229,29 +236,22 @@ export const reservationBanquetApi = {
   },
 };
 
-// ---- Payments (Banquet) ----
-export const paymentBanquetApi = {
-  async uploadSlip({ reservation_code, amount, file }, init) {
-    const fd = new FormData();
-    fd.append("reservation_code", reservation_code);
-    if (amount != null) fd.append("amount", String(amount));
-    if (file) fd.append("slip", file, file.name);
-
-    const res = await fetch(`${API_BASE}/payments/banquet/upload-slip`, {
-      method: "POST",
-      credentials: "include",
-      headers: mergeHeaders({ ...authHeader() }, init?.headers),
-      body: fd,
-      cache: "no-store",
-      signal: init?.signal,
-    });
-    return handle(res);
-  },
-};
-
 /* ===================== Reservation Resolver ===================== */
 export const reservationResolverApi = {
   resolve(code, init) {
     return apiGet("/reservations/resolve", { code }, init);
   },
+};
+
+// ===================== Dashboard API ===================== */
+export const dashboardApi = {
+  roomsStatus(init){ return apiGet("/dashboard/rooms/status", undefined, init); },
+  roomsUtilization(period="today", init){ return apiGet("/dashboard/rooms/utilization", { period }, init); },
+  roomsTurnover(init){ return apiGet("/dashboard/rooms/turnover", undefined, init); },
+  roomsByType(period="today", init){ return apiGet("/dashboard/rooms/by-type", { period }, init); },
+
+  banquetsStatus(init){ return apiGet("/dashboard/banquets/status", undefined, init); },
+  banquetsUtilization(period="today", init){ return apiGet("/dashboard/banquets/utilization", { period }, init); },
+
+  revenue(period="today", init){ return apiGet("/dashboard/revenue", { period }, init); },
 };

@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useLocation, useSearchParams, useNavigate } from "react-router-dom";
 import Navbar from "../../components/Navbar";
 import Stepper from "../../components/Stepper";
-import { reservationApi, paymentApi, roomApi } from "../../lib/api";
+import { reservationApi, roomApi, paymentApi  } from "../../lib/api";
 
 /* helper: แปลงค่าเป็น number แบบกันพลาด (Prisma Decimal/string) */
 function asNumber(x) {
@@ -70,7 +70,12 @@ export default function BookingPayment() {
   useEffect(() => {
     let alive = true;
     if (asNumber(state?.total) > 0) return;
-    if (asNumber(data?.total ?? data?.total_price ?? data?.amount ?? data?.payment_amount) > 0) return;
+    if (
+      asNumber(
+        data?.total ?? data?.total_price ?? data?.amount ?? data?.payment_amount
+      ) > 0
+    )
+      return;
 
     const rid = data?.room?.room_id || data?.room_id;
     if (!rid) return;
@@ -122,7 +127,11 @@ export default function BookingPayment() {
     return () => clearInterval(t);
   }, []);
   const rawPay = data?.last_payment_status;
-  const payStatus = (["unpaid","pending","confirmed","rejected"].includes(rawPay) ? rawPay : "unpaid");
+  const payStatus = ["unpaid", "pending", "confirmed", "rejected"].includes(
+    rawPay
+  )
+    ? rawPay
+    : "unpaid";
 
   const countdown = useMemo(() => {
     if (!deadline || payStatus === "pending") return "";
@@ -194,12 +203,19 @@ export default function BookingPayment() {
     setErr("");
     setUploading(true);
     try {
-      await paymentApi.uploadRoomSlip({
+      const result = await paymentApi.verifyAndApply({
+        type: "room",
         reservation_code: code,
         amount: Math.round(autoAmount),
         file,
       });
-      alert("อัปโหลดสลิปเรียบร้อย! กรุณารอแอดมินตรวจสอบ");
+
+      if (result?.verdict?.ok) {
+        alert("✅ ตรวจสอบสลิปผ่านแล้ว ระบบได้ยืนยันการจองให้เรียบร้อย!");
+      } else {
+        alert("✅ ส่งสลิปแล้ว รอตรวจสอบโดยเจ้าหน้าที่");
+      }
+
       nav(`/bookings/success?code=${encodeURIComponent(code)}`, {
         replace: true,
       });
@@ -237,7 +253,11 @@ export default function BookingPayment() {
               value={code}
               onChange={(e) => setCode(e.target.value)}
             />
-            <button className="btnPrimary" type="submit" disabled={!code.trim()}>
+            <button
+              className="btnPrimary"
+              type="submit"
+              disabled={!code.trim()}
+            >
               ตรวจสอบ
             </button>
           </form>
@@ -266,7 +286,8 @@ export default function BookingPayment() {
                 <div>
                   <dt>ช่วงวัน</dt>
                   <dd>
-                    {fmtDate(data?.checkin_date)} – {fmtDate(data?.checkout_date)} ({nights} คืน)
+                    {fmtDate(data?.checkin_date)} –{" "}
+                    {fmtDate(data?.checkout_date)} ({nights} คืน)
                   </dd>
                 </div>
                 <div>
@@ -297,7 +318,7 @@ export default function BookingPayment() {
                   </div>
                   <div
                     className={`bpCountdown ${
-                      (deadline.getTime() - now <= 0) ? "bpCountdown--over" : ""
+                      deadline.getTime() - now <= 0 ? "bpCountdown--over" : ""
                     }`}
                   >
                     {countdown}
@@ -336,12 +357,26 @@ export default function BookingPayment() {
               )}
 
               {payStatus === "pending" && (
-                <div className="emptyBox" style={{ background:"#fff8e6", borderColor:"#ffe1a6", color:"#a36100" }}>
+                <div
+                  className="emptyBox"
+                  style={{
+                    background: "#fff8e6",
+                    borderColor: "#ffe1a6",
+                    color: "#a36100",
+                  }}
+                >
                   เราได้รับหลักฐานการชำระแล้ว กำลังตรวจสอบ กรุณารอการยืนยัน
                 </div>
               )}
               {payStatus === "confirmed" && (
-                <div className="emptyBox" style={{ background:"#ecfff1", borderColor:"#a7f3c4", color:"#0f7a3b" }}>
+                <div
+                  className="emptyBox"
+                  style={{
+                    background: "#ecfff1",
+                    borderColor: "#a7f3c4",
+                    color: "#0f7a3b",
+                  }}
+                >
                   การชำระเงินได้รับการยืนยันแล้ว ขอบคุณค่ะ
                 </div>
               )}
@@ -378,7 +413,10 @@ export default function BookingPayment() {
                       onChange={(e) => onPickFile(e.target.files?.[0] || null)}
                     />
                     {fileInfo && (
-                      <div className="bpHelp" style={{ fontSize: 12, opacity: 0.9 }}>
+                      <div
+                        className="bpHelp"
+                        style={{ fontSize: 12, opacity: 0.9 }}
+                      >
                         {fileInfo}
                       </div>
                     )}
@@ -393,17 +431,19 @@ export default function BookingPayment() {
                           nav(state.back_url, { replace: true });
                           return;
                         }
-                        const back = state?.back_to || (data
-                          ? {
-                              id:
-                                data?.room?.id ||
-                                data?.room_id ||
-                                data?.room?.room_id,
-                              checkin: data?.checkin_date,
-                              checkout: data?.checkout_date,
-                              guests: data?.guests || data?.num_guests || 1,
-                            }
-                          : null);
+                        const back =
+                          state?.back_to ||
+                          (data
+                            ? {
+                                id:
+                                  data?.room?.id ||
+                                  data?.room_id ||
+                                  data?.room?.room_id,
+                                checkin: data?.checkin_date,
+                                checkout: data?.checkout_date,
+                                guests: data?.guests || data?.num_guests || 1,
+                              }
+                            : null);
                         if (back?.id && back?.checkin && back?.checkout) {
                           const qs = new URLSearchParams({
                             checkin: back.checkin,
@@ -484,10 +524,15 @@ function thaiStatus(s) {
 }
 function thaiPayStatus(s) {
   switch (s) {
-    case "unpaid":   return "ยังไม่ชำระ";
-    case "pending":  return "รอตรวจสอบ";
-    case "confirmed":return "อนุมัติแล้ว";
-    case "rejected": return "ตีกลับ";
-    default:         return "ยังไม่ชำระ";
+    case "unpaid":
+      return "ยังไม่ชำระ";
+    case "pending":
+      return "รอตรวจสอบ";
+    case "confirmed":
+      return "อนุมัติแล้ว";
+    case "rejected":
+      return "ตีกลับ";
+    default:
+      return "ยังไม่ชำระ";
   }
 }

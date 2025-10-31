@@ -1,18 +1,26 @@
-// src/components/Navbar.jsx
 import React, { useState } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import logo from "../assets/logo.jpg";
 
 export default function Navbar() {
   const nav = useNavigate();
+  const loc = useLocation();
   const [code, setCode] = useState("");
 
   const onSearch = (e) => {
     e.preventDefault();
     const v = String(code || "").trim();
     if (!v) return;
-    // ➜ ส่งไปเพจกลางเสมอ ให้เพจนั้นเป็นคนตัดสินใจว่าจะไป room หรือ banquet
-    nav(`/bookings/check?code=${encodeURIComponent(v)}`);
+
+    const target = `/bookings/status?code=${encodeURIComponent(v)}`;
+    if (loc.pathname.startsWith("/bookings/status")) {
+      // ถ้าอยู่หน้าเดิม ให้บังคับ reload query ใหม่
+      nav(target, { replace: true });
+      window.location.href = target; // reload หน้าใหม่ทันที
+    } else {
+      nav(target);
+    }
+    setCode(""); // เคลียร์ช่องค้นหาเสมอ
   };
 
   return (
@@ -22,10 +30,10 @@ export default function Navbar() {
           <img src={logo} alt="Suree Garden Resort" className="navbar-logo" />
         </NavLink>
 
-        {/* ค้นหาด้วยรหัสการจอง */}
+        {/* ช่องค้นหา Booking Code */}
         <form className="searchBar" role="search" onSubmit={onSearch}>
           <input
-            placeholder="กรอกรหัสการจอง (เช่น FW6JFJ6A หรือ NP9WK482)"
+            placeholder="กรอกรหัสการจอง (เช่น FW6JFJ6A หรือ BNQ1ABCD)"
             value={code}
             onChange={(e) => setCode(e.target.value)}
           />
@@ -56,8 +64,6 @@ export default function Navbar() {
 
             <li><NavLink to="/banquet">ห้องจัดเลี้ยง</NavLink></li>
 
-            {/* เพจรวมสำหรับเช็คสถานะ */}
-            <li><NavLink to="/bookings/check">เช็คสถานะการจอง</NavLink></li>
           </ul>
         </nav>
       </div>
