@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
-import logo from "../assets/logo.jpg";
+import logo from "../assets/logo_v1.png";
 
 export default function Navbar() {
   const nav = useNavigate();
@@ -33,7 +33,7 @@ export default function Navbar() {
         {/* ช่องค้นหา Booking Code */}
         <form className="searchBar" role="search" onSubmit={onSearch}>
           <input
-            placeholder="กรอกรหัสการจอง (เช่น FW6JFJ6A หรือ BNQ1ABCD)"
+            placeholder="ตรวจสอบสถานะด้วยรหัสการจอง"
             value={code}
             onChange={(e) => setCode(e.target.value)}
           />

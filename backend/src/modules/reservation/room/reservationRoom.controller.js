@@ -66,6 +66,17 @@ exports.createReservationRoom = async (req, res) => {
       return res.status(400).json({ message: e.message || 'resolve customer failed' });
     }
 
+    const roomRec = await prisma.room.findUnique({
+      where: { room_id: Number(room_id) },
+      select: { room_id: true, status: true, room_number: true }
+    });
+    if (!roomRec) {
+      return res.status(404).json({ message: 'Room not found' });
+    }
+    if (roomRec.status !== 'available') {
+      return res.status(409).json({ message: 'Room is currently not available for booking' });
+    }
+
     // เตรียมโค้ด และหมดเวลา
     let code = genReservationCode(8);
     for (let i = 0; i < 5; i++) {

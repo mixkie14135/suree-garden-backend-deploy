@@ -1,4 +1,3 @@
-// frontend/src/pages/Banquet.jsx
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { banquetApi, fileUrl } from "../lib/api";
@@ -43,6 +42,28 @@ function computeFeatures(b) {
   if (hasKaraoke) feats.push({ key: "karaoke", label: "คาราโอเกะ" });
 
   return feats.slice(0, 4);
+}
+
+function StatusRibbon({ show, label = "สถานะ: ไม่พร้อมให้จอง" }) {
+  if (!show) return null;
+  return (
+    <div
+      style={{
+        position: "absolute",
+        top: 8,
+        left: -8,
+        background: "crimson",
+        color: "#fff",
+        padding: "6px 12px",
+        transform: "rotate(-8deg)",
+        fontWeight: 700,
+        boxShadow: "0 2px 8px rgba(0,0,0,.15)",
+        borderRadius: 6,
+      }}
+    >
+      {label}
+    </div>
+  );
 }
 
 export default function Banquet() {
@@ -103,7 +124,7 @@ export default function Banquet() {
         <div className="typeHeroTitle">
           <div>
             <h1>ห้องจัดเลี้ยง</h1>
-            <div className="typeHeroSub">Banquet &amp; Event Halls</div>
+            <div className="typeHeroSub">Banquet room</div>
           </div>
         </div>
       </section>
@@ -126,11 +147,13 @@ export default function Banquet() {
             const img = pickCardImage(b);
             const price = Number(b?.price_per_hour ?? b?.price ?? 0);
             const features = computeFeatures(b);
+            const canBook = b?.status === "available";
 
             return (
               <article key={b.banquet_id} className="roomCard">
-                {/* รูป (ไม่มี fallback) */}
-                <div className="rtCardImg">
+                {/* รูป */}
+                <div className="rtCardImg" style={{ position:"relative" }}>
+                  <StatusRibbon show={!canBook} />
                   {img ? (
                     <img
                       src={img}
@@ -181,19 +204,24 @@ export default function Banquet() {
                     <button
                       type="button"
                       className="priceBtn"
-                      onClick={() => navigate(`/bookings/bookingbanquet/${b.banquet_id}`)}
+                      disabled={!canBook}
+                      aria-disabled={!canBook}
+                      onClick={() => canBook && navigate(`/bookings/bookingbanquet/${b.banquet_id}`)}
                       aria-label={`จองห้องจัดเลี้ยง ${b?.name || b?.banquet_id}`}
+                      title={canBook ? "เริ่มจองห้องนี้" : "ห้องนี้ยังไม่พร้อมให้จอง"}
+                      style={!canBook ? { opacity: 0.6, cursor: "not-allowed" } : undefined}
                     >
                       <span className="baht">฿</span>
                       <strong>{(price || 0).toLocaleString()}</strong>
                       <span className="per">บาท / ชั่วโมง</span>
                     </button>
+                    {!canBook && <div style={{ fontSize:12, color:"#b00020", marginTop:6 }}>ไม่พร้อมให้จอง</div>}
 
                     {false && (
                       <button
                         type="button"
                         className="detailBtn"
-                        onClick={() => navigate(`/banquet/${b.banquet_id}`)}
+                        onClick={() => canBook && navigate(`/banquet/${b.banquet_id}`)}
                       >
                         รายละเอียด
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>

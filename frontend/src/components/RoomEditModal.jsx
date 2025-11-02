@@ -1,3 +1,4 @@
+// frontend/src/components/RoomEditModal.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
 const AMENITIES = [

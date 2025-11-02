@@ -71,12 +71,17 @@ body{
 .hero{position:relative;height:520px;overflow:hidden;}
 .hero img{width:100%;height:100%;object-fit:cover;display:block;}
 .heroOverlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.15),rgba(0,0,0,.35));z-index:1;}
-.heroContent{position:absolute;left:60px;bottom:48px;color:#fff;max-width:560px;z-index:2;}
+.heroContent{position:absolute;left:205px;bottom:132px;color:#fff;max-width:560px;z-index:2;}
 .heroTitle{font-size:52px;margin:0 0 8px;font-weight:900;text-shadow:0 3px 8px rgba(0,0,0,.35);}
-.heroSubtitle{font-size:20px;line-height:1.5;margin:0 0 30px;text-shadow:0 2px 6px rgba(0,0,0,.3);}
+.heroSubtitle{font-size:32px;line-height:1.5;margin:0 0 30px;text-shadow:0 2px 6px rgba(0,0,0,.3);}
 .heroBtn{
-  background:#7C813E;color:#fff;
-  border-radius:10px;padding:12px 20px;font-weight:800;cursor:pointer;transition:.15s;
+  background:#7C813E; color:#fff;
+  border:0; border-radius:12px;
+  padding:14px 28px;
+  min-height:52px;              
+  font-size:24px; font-weight:800; line-height:1;
+  cursor:pointer; transition:.15s;
+  box-shadow:0 8px 18px rgba(111,140,71,.28);
 }
 .heroBtn:hover{background:var(--accent-700);transform:translateY(-1px);box-shadow:0 6px 16px rgba(0,0,0,.18);}
 
@@ -177,6 +182,7 @@ body{
 .typePage .facts{
   list-style:none;padding:0;margin:0 0 18px;
   display:grid;gap:10px;
+  min-height: 96px; /* กันพื้นที่ ~3 แถว ให้ปุ่มอยู่ระดับเดียวกัน */
 }
 .typePage .facts li{
   display:flex;align-items:center;gap:10px;
@@ -450,7 +456,7 @@ body{
 .stp-line{ background:#e1e1e1; }  /* เทานุ่มขึ้น */
 
 .stp-lineFill{
-  background:linear-gradient(90deg,#a7bf76,#7c813e);
+  background:linear-gradient(90deg,#7c813e,#7c813e);
   transform-origin:left center; transform:scaleX(0);
 }
 
@@ -514,12 +520,11 @@ body{
 }
 
 /* =================== Featured Grid (หน้าแรก) =================== */
-.featSection { /* โซน "ค้นพบสุรีย์การ์เด้น" */ }
 
 .featGridCustom {
   display: flex;
   align-items: stretch;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 24px;
   margin-top: 24px;
 }
@@ -555,7 +560,10 @@ body{
 /* แถวล่าง: รูปแนวนอน */
 .featWideWrap {
   margin-top: 32px;
+  display: flex;  
+  justify-content: flex-start;
 }
+
 .featWideImg {
   width: 100%;
   height: auto;
@@ -565,7 +573,7 @@ body{
   box-shadow: var(--shadow);
   max-width: 1060px;   /* ให้ขนาดใกล้ภาพจริง */
   aspect-ratio: 1060 / 648;
-  margin: 0 auto;      /* จัดให้อยู่กลาง container */
+  margin: 0;      /* จัดให้อยู่กลาง container */
 }
 
 /* Responsive */
@@ -586,6 +594,12 @@ body{
 
 /* ================== HOME FULL – fixed 450x300 + gap 98 ================== */
 
+/* ปรับเฉพาะหน้า homeFull ไม่ให้ container แคบเกินไป */
+.homeFull .container {
+  max-width: 1280px; /* หรือ 1320px ตาม layout */
+}
+
+
 /* Hero (ตาม Figma 1440x536) */
 .homeFull .homeHero{
   position:relative; height:536px; max-height:536px; overflow:hidden;
@@ -595,18 +609,19 @@ body{
 .homeFull .homeHeroShade{ position:absolute; inset:0; background:linear-gradient(180deg,rgba(0,0,0,.12),rgba(0,0,0,.28)); }
 
 .homeFull .homeTitle{
-  margin:28px 0 18px; font-size:22px; font-weight:900; text-align:center; color:#2b2b2b;
+  margin:28px 0 18px; font-size:32px; font-weight:900; text-align:center; color:#000000;
 }
 
 /* แถวมาตรฐาน: รูปซ้าย (450x300) — เนื้อหาขวา (gap 98px) */
 .homeFull .homeRow{
-  display:flex; align-items:flex-start; gap:98px;
-  margin:22px 0;
+  display:flex; align-items:flex-start;
+  gap: var(--row-gap, 98px);
+  margin:65px 0;
 }
 
 /* รูปทั้งหมด (ยกเว้น hero) = 450x300 */
 .homeFull .homeThumb{
-  flex:0 0 450px; width:450px; height:300px;
+  flex:0 0 var(--thumb-w, 450px); width:var(--thumb-w, 450px); height:300px;
   border:1px solid var(--line); border-radius:var(--radius);
   overflow:hidden; box-shadow:var(--shadow); position:relative;
 }
@@ -619,14 +634,27 @@ body{
 .homeFull .roomImg::after { content:none !important; display:none !important; }
 
 /* กล่องข้อมูลด้านขวา + tilt effect */
-.homeFull .homeInfo{ flex:1 1 auto; position:relative; transform-style:preserve-3d; }
+.homeFull .homeInfo{
+  flex: 0 1 calc(100% - var(--thumb-w, 450px) - var(--row-gap, 98px));
+  position:relative; transform-style:preserve-3d;
+}
+
 .homeFull .chipRow{ display:flex; gap:8px; flex-wrap:wrap; }
 .homeFull .chip{
   display:inline-block; padding:6px 10px; border-radius:999px;
-  background:#fff; border:1px solid var(--line); color:#555; font-weight:700; font-size:12px;
+  background:#fff; border:1px solid #7C813E; color:#555; font-weight:700; font-size:16px;
 }
-.homeFull .homeCardTitle{ margin:10px 0 6px; font-size:18px; font-weight:900; color:#1f1f1f; }
-.homeFull .homeCardDesc{ margin:0; color:#555; line-height:1.7; }
+.homeFull .homeCardTitle{ margin:10px 0 6px; font-size:24px; font-weight:900; color:#1f1f1f; }
+
+.homeFull .homeCardDesc{
+  margin:0; color:#555; line-height:1.7;
+  max-width: var(--desc-max, 100ch);
+  /* text-wrap: balance;  <-- เอาออก */
+  /* ทางเลือกถ้าอยากไหลเต็มขอบจริง ๆ: */
+  text-wrap: normal;      /* ค่าเริ่มต้น */
+  word-break: normal;     /* กันแตกคำแปลก ๆ */
+  line-break: auto;       /* ใช้กฎตัดบรรทัดปกติ */
+}
 
 /* tilt highlight */
 .homeFull .tiltGlow{
@@ -645,3 +673,55 @@ body{
   .homeFull .homeRow{ flex-direction:column; gap:16px; }
   .homeFull .homeThumb{ width:100%; max-width:450px; height:auto; aspect-ratio:3/2; }
 }
+
+/* ===== Segmented buttons (เหมือนแดชบอร์ด) ===== */
+.seg{
+  display:inline-flex;
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:10px;
+  padding:4px;
+  gap:0;
+}
+.segBtn{
+  border:0;
+  background:transparent;
+  color:#333;
+  padding:8px 12px;
+  border-radius:8px;
+  font-weight:800;
+  font-size:14px;
+  cursor:pointer;
+}
+.segBtn.is-active{
+  background:#7C813E;
+  color:#fff;
+  box-shadow:0 6px 16px rgba(111,140,71,.22);
+}
+
+/* ล็อก date เมื่อเลือก quick ≠ all */
+.inputDisabled{
+  opacity:.6;
+  pointer-events:none;
+}
+
+/* หัวข้อหลักหน้า HomeFull */
+.homeFull .homeTitle{
+  margin:28px 0 18px;
+  font-size:22px;
+  font-weight:900;
+  text-align:center;
+  color:#2b2b2b;
+}
+
+/* เส้นใต้หัวข้อ: กว้าง 200px, สี #7C813E, เว้น 15px จากตัวอักษร */
+.homeFull .homeTitle::after{
+  content:"";
+  display:block;
+  width:150px;
+  height:4px;            /* ปรับความหนาได้ เช่น 3-6px */
+  background:#7C813E;    /* สีตามที่ขอ */
+  margin:15px auto 0;    /* เว้นห่าง 15px และจัดกลาง */
+  border-radius:2px;     /* มุมโค้งเล็กน้อยให้ดูเนียน */
+}
+

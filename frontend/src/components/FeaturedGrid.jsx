@@ -23,7 +23,7 @@ export default function FeaturedGrid() {
               to="/discover"
               onClick={() => window.scrollTo(0, 0)}
             >
-              ดูทั้งหมด <span aria-hidden="true">→</span>
+              ดูทั้งหมด <span aria-hidden="true">▶</span>
             </Link>
           </div>
 

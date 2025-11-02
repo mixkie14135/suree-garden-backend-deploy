@@ -1,9 +1,10 @@
-// src/pages/bookings/BookingPayment.jsx
+// frontend/src/pages/bookings/BookingPayment.jsx
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useSearchParams, useNavigate } from "react-router-dom";
 import Navbar from "../../components/Navbar";
 import Stepper from "../../components/Stepper";
 import { reservationApi, roomApi, paymentApi  } from "../../lib/api";
+import Swal from "sweetalert2";
 
 /* helper: แปลงค่าเป็น number แบบกันพลาด (Prisma Decimal/string) */
 function asNumber(x) {
@@ -48,9 +49,7 @@ export default function BookingPayment() {
       })
       .catch((e) => alive && setErr(e?.message || "โหลดข้อมูลสถานะไม่สำเร็จ"))
       .finally(() => alive && setLoading(false));
-    return () => {
-      alive = false;
-    };
+    return () => { alive = false; };
   }, [code]);
 
   // คืนที่พัก
@@ -74,8 +73,7 @@ export default function BookingPayment() {
       asNumber(
         data?.total ?? data?.total_price ?? data?.amount ?? data?.payment_amount
       ) > 0
-    )
-      return;
+    ) return;
 
     const rid = data?.room?.room_id || data?.room_id;
     if (!rid) return;
@@ -90,13 +88,9 @@ export default function BookingPayment() {
           asNumber(room?.data?.price);
         setRoomPrice(p);
       })
-      .catch(() => {
-        if (alive) setRoomPrice(NaN);
-      });
+      .catch(() => { if (alive) setRoomPrice(NaN); });
 
-    return () => {
-      alive = false;
-    };
+    return () => { alive = false; };
   }, [data, state?.total]);
 
   // คำนวณยอดอัตโนมัติ
@@ -127,9 +121,7 @@ export default function BookingPayment() {
     return () => clearInterval(t);
   }, []);
   const rawPay = data?.last_payment_status;
-  const payStatus = ["unpaid", "pending", "confirmed", "rejected"].includes(
-    rawPay
-  )
+  const payStatus = ["unpaid", "pending", "confirmed", "rejected"].includes(rawPay)
     ? rawPay
     : "unpaid";
 
@@ -151,30 +143,16 @@ export default function BookingPayment() {
 
   // ฟอร์แมตไฟล์ (เฉพาะรูป, 5MB)
   function onPickFile(f) {
-    if (!f) {
-      setFile(null);
-      setFileInfo("");
-      return;
-    }
+    if (!f) { setFile(null); setFileInfo(""); return; }
     const maxMB = 5;
     if (f.size > maxMB * 1024 * 1024) {
       setErr(`ไฟล์ใหญ่เกินไป (จำกัด ${maxMB}MB)`);
-      setFile(null);
-      setFileInfo("");
-      return;
+      setFile(null); setFileInfo(""); return;
     }
-    const okTypes = [
-      "image/jpeg",
-      "image/png",
-      "image/webp",
-      "image/jpg",
-      "image/heic",
-    ];
+    const okTypes = ["image/jpeg","image/png","image/webp","image/jpg","image/heic","image/heif"];
     if (!okTypes.includes(f.type)) {
       setErr("รองรับเฉพาะไฟล์รูปภาพ (JPG, PNG, WEBP, HEIC)");
-      setFile(null);
-      setFileInfo("");
-      return;
+      setFile(null); setFileInfo(""); return;
     }
     setErr("");
     setFile(f);
@@ -184,43 +162,70 @@ export default function BookingPayment() {
   // อัปโหลดสลิป
   async function handleUpload(e) {
     e.preventDefault();
-    if (!code) {
-      setErr("กรุณากรอกรหัสการจอง");
-      return;
-    }
-    if (!file) {
-      setErr("กรุณาแนบสลิป");
-      return;
-    }
+    if (!code) { setErr("กรุณากรอกรหัสการจอง"); return; }
+    if (!file) { setErr("กรุณาแนบสลิป"); return; }
     if (!Number.isFinite(autoAmount) || autoAmount <= 0) {
-      setErr("ไม่พบยอดชำระที่ถูกต้อง");
-      return;
+      setErr("ไม่พบยอดชำระที่ถูกต้อง"); return;
     }
-    if (isExpired) {
-      setErr("เกินกำหนดชำระแล้ว ไม่สามารถอัปโหลดได้");
-      return;
-    }
+    if (isExpired) { setErr("เกินกำหนดชำระแล้ว ไม่สามารถอัปโหลดได้"); return; }
+
     setErr("");
     setUploading(true);
     try {
       const result = await paymentApi.verifyAndApply({
         type: "room",
         reservation_code: code,
-        amount: Math.round(autoAmount),
+        amount: Math.round(autoAmount),   // ← ใช้ค่าจาก state โดยตรง
         file,
       });
 
       if (result?.verdict?.ok) {
-        alert("✅ ตรวจสอบสลิปผ่านแล้ว ระบบได้ยืนยันการจองให้เรียบร้อย!");
+        await Swal.fire({
+          icon: "success",
+          title: "ยืนยันการชำระเรียบร้อย",
+          text: "ระบบตรวจสอบสลิปผ่านและยืนยันการจองให้อัตโนมัติแล้ว",
+          confirmButtonText: "ตกลง",
+        });
       } else {
-        alert("✅ ส่งสลิปแล้ว รอตรวจสอบโดยเจ้าหน้าที่");
+        await Swal.fire({
+          icon: "info",
+          title: "ส่งสลิปสำเร็จ",
+          text: "เราได้รับหลักฐานแล้ว กำลังตรวจสอบโดยเจ้าหน้าที่",
+          confirmButtonText: "ตกลง",
+        });
       }
 
-      nav(`/bookings/success?code=${encodeURIComponent(code)}`, {
-        replace: true,
-      });
+      nav(`/bookings/success?code=${encodeURIComponent(code)}`, { replace: true });
     } catch (e2) {
-      setErr(e2?.message || "อัปโหลดไม่สำเร็จ");
+      const msg = String(e2?.message || "");
+      let icon = "error";
+      let title = "อัปโหลดไม่สำเร็จ";
+      let text = msg;
+
+      if (msg.includes("DUPLICATE_SLIP") || msg.includes("สลิปนี้เคยถูกใช้")) {
+        icon = "warning";
+        title = "สลิปนี้ถูกใช้ไปแล้ว";
+        text = "กรุณาอัปโหลดสลิปใหม่ที่ยังไม่เคยตรวจสอบมาก่อน";
+        setErr("");
+      } else if (msg.includes("INVALID_FILE_TYPE")) {
+        icon = "error";
+        title = "ไฟล์ไม่รองรับ";
+        text = "รองรับเฉพาะรูป JPG/PNG/WEBP/HEIC เท่านั้น";
+      } else if (msg.includes("INVALID_IMAGE_FORMAT") || msg.includes("INVALID_IMAGE_TOO_SMALL")) {
+        icon = "error";
+        title = "รูปภาพไม่ถูกต้อง";
+        text = "ไฟล์รูปเสียหรือไม่ครบถ้วน กรุณาถ่ายภาพสลิปให้ชัดเจนแล้วลองใหม่";
+      } else if (msg.includes("INVALID_SLIP")) {
+        icon = "info";
+        title = "ตรวจไม่พบข้อมูลสลิป";
+        text = "ภาพที่แนบมาไม่ใช่สลิปโอนเงิน กรุณาอัปโหลดภาพสลิปจริงจากแอปธนาคาร";
+      } else if (msg.includes("VERIFY_FAILED")) {
+        icon = "error";
+        title = "ตรวจสอบไม่สำเร็จ";
+        text = "ไม่สามารถตรวจสอบสลิปได้ชั่วคราว โปรดลองใหม่อีกครั้ง";
+      }
+
+      await Swal.fire({ icon, title, text, confirmButtonText: "ตกลง" });
     } finally {
       setUploading(false);
     }
@@ -253,11 +258,7 @@ export default function BookingPayment() {
               value={code}
               onChange={(e) => setCode(e.target.value)}
             />
-            <button
-              className="btnPrimary"
-              type="submit"
-              disabled={!code.trim()}
-            >
+            <button className="btnPrimary" type="submit" disabled={!code.trim()}>
               ตรวจสอบ
             </button>
           </form>
@@ -266,9 +267,7 @@ export default function BookingPayment() {
         {loading ? (
           <div className="loading">กำลังโหลด...</div>
         ) : err ? (
-          <div className="emptyBox" style={{ color: "crimson" }}>
-            {err}
-          </div>
+          <div className="emptyBox" style={{ color: "crimson" }}>{err}</div>
         ) : data ? (
           <div className="bpGrid">
             {/* ซ้าย: สรุป */}
@@ -286,8 +285,7 @@ export default function BookingPayment() {
                 <div>
                   <dt>ช่วงวัน</dt>
                   <dd>
-                    {fmtDate(data?.checkin_date)} –{" "}
-                    {fmtDate(data?.checkout_date)} ({nights} คืน)
+                    {fmtDate(data?.checkin_date)} – {fmtDate(data?.checkout_date)} ({nights} คืน)
                   </dd>
                 </div>
                 <div>
@@ -313,43 +311,25 @@ export default function BookingPayment() {
               {deadline && payStatus !== "pending" && (
                 <div className="bpDeadline">
                   <div>ชำระก่อน:</div>
-                  <div className="bpDeadlineTime">
-                    {deadline.toLocaleString("th-TH")}
-                  </div>
-                  <div
-                    className={`bpCountdown ${
-                      deadline.getTime() - now <= 0 ? "bpCountdown--over" : ""
-                    }`}
-                  >
+                  <div className="bpDeadlineTime">{deadline.toLocaleString("th-TH")}</div>
+                  <div className={`bpCountdown ${deadline.getTime() - now <= 0 ? "bpCountdown--over" : ""}`}>
                     {countdown}
                   </div>
                 </div>
               )}
             </aside>
 
-            {/* ขวา: ช่องทาง & อัปโหลด (ปิดฟอร์มเมื่อ pending/confirmed) */}
+            {/* ขวา: ช่องทาง & อัปโหลด */}
             <section className="bpCard">
               <h3 className="bpCardTitle">ช่องทางการชำระ</h3>
 
               {acc ? (
                 <div className="bpAccount">
-                  <div className="bpAccRow">
-                    <span>ธนาคาร</span>
-                    <strong>{acc.bank_name}</strong>
-                  </div>
-                  <div className="bpAccRow">
-                    <span>เลขบัญชี</span>
-                    <strong>{acc.account_number}</strong>
-                  </div>
-                  <div className="bpAccRow">
-                    <span>ชื่อบัญชี</span>
-                    <strong>{acc.account_name}</strong>
-                  </div>
+                  <div className="bpAccRow"><span>ธนาคาร</span><strong>{acc.bank_name}</strong></div>
+                  <div className="bpAccRow"><span>เลขบัญชี</span><strong>{acc.account_number}</strong></div>
+                  <div className="bpAccRow"><span>ชื่อบัญชี</span><strong>{acc.account_name}</strong></div>
                   {acc.promptpay_id && (
-                    <div className="bpAccRow">
-                      <span>พร้อมเพย์</span>
-                      <strong>{acc.promptpay_id}</strong>
-                    </div>
+                    <div className="bpAccRow"><span>พร้อมเพย์</span><strong>{acc.promptpay_id}</strong></div>
                   )}
                 </div>
               ) : (
@@ -359,11 +339,7 @@ export default function BookingPayment() {
               {payStatus === "pending" && (
                 <div
                   className="emptyBox"
-                  style={{
-                    background: "#fff8e6",
-                    borderColor: "#ffe1a6",
-                    color: "#a36100",
-                  }}
+                  style={{ background:"#fff8e6", borderColor:"#ffe1a6", color:"#a36100" }}
                 >
                   เราได้รับหลักฐานการชำระแล้ว กำลังตรวจสอบ กรุณารอการยืนยัน
                 </div>
@@ -371,38 +347,15 @@ export default function BookingPayment() {
               {payStatus === "confirmed" && (
                 <div
                   className="emptyBox"
-                  style={{
-                    background: "#ecfff1",
-                    borderColor: "#a7f3c4",
-                    color: "#0f7a3b",
-                  }}
+                  style={{ background:"#ecfff1", borderColor:"#a7f3c4", color:"#0f7a3b" }}
                 >
                   การชำระเงินได้รับการยืนยันแล้ว ขอบคุณค่ะ
                 </div>
               )}
+
               {(payStatus === "unpaid" || payStatus === "rejected") && (
                 <form className="bpPayForm" onSubmit={handleUpload}>
-                  <label className="bpField">
-                    <div>ยอดที่ต้องชำระ (บาท)</div>
-                    {Number.isFinite(autoAmount) && autoAmount > 0 ? (
-                      <>
-                        <input
-                          className="bkInput"
-                          value={Math.round(autoAmount).toLocaleString("th-TH")}
-                          readOnly
-                        />
-                        <input
-                          type="hidden"
-                          name="amount"
-                          value={Math.round(autoAmount)}
-                        />
-                      </>
-                    ) : (
-                      <div className="emptyBox" style={{ color: "#b30000" }}>
-                        ไม่พบยอดชำระ โปรดรีเฟรชหน้าหรือกลับไปเริ่มจองใหม่
-                      </div>
-                    )}
-                  </label>
+                  {/* ====== ลบส่วน "ยอดที่ต้องชำระ (บาท)" ฝั่งขวาออกเรียบร้อย ====== */}
 
                   <label className="bpField">
                     <div>แนบสลิป *</div>
@@ -413,10 +366,7 @@ export default function BookingPayment() {
                       onChange={(e) => onPickFile(e.target.files?.[0] || null)}
                     />
                     {fileInfo && (
-                      <div
-                        className="bpHelp"
-                        style={{ fontSize: 12, opacity: 0.9 }}
-                      >
+                      <div className="bpHelp" style={{ fontSize: 12, opacity: 0.9 }}>
                         {fileInfo}
                       </div>
                     )}
@@ -435,10 +385,7 @@ export default function BookingPayment() {
                           state?.back_to ||
                           (data
                             ? {
-                                id:
-                                  data?.room?.id ||
-                                  data?.room_id ||
-                                  data?.room?.room_id,
+                                id: data?.room?.id || data?.room_id || data?.room?.room_id,
                                 checkin: data?.checkin_date,
                                 checkout: data?.checkout_date,
                                 guests: data?.guests || data?.num_guests || 1,
@@ -450,10 +397,7 @@ export default function BookingPayment() {
                             checkout: back.checkout,
                             guests: String(back.guests || 1),
                           }).toString();
-                          nav(
-                            `/bookings/bookingroom/${back.id}/confirm?${qs}`,
-                            { replace: true }
-                          );
+                          nav(`/bookings/bookingroom/${back.id}/confirm?${qs}`, { replace: true });
                         } else {
                           nav(-1);
                         }
@@ -465,13 +409,7 @@ export default function BookingPayment() {
                     <button
                       type="submit"
                       className="btnPrimary"
-                      disabled={
-                        uploading ||
-                        isExpired ||
-                        !file ||
-                        !Number.isFinite(autoAmount) ||
-                        autoAmount <= 0
-                      }
+                      disabled={uploading || isExpired || !file || !Number.isFinite(autoAmount) || autoAmount <= 0}
                       title={
                         isExpired
                           ? "เลยกำหนดชำระแล้ว"
@@ -483,9 +421,7 @@ export default function BookingPayment() {
                       {uploading ? "กำลังอัปโหลด..." : "อัปโหลดหลักฐานการโอน"}
                     </button>
                   </div>
-                  <div className="bpNote">
-                    เมื่อส่งหลักฐานแล้ว กรุณารอเจ้าหน้าที่ตรวจสอบและยืนยัน
-                  </div>
+                  <div className="bpNote">เมื่อส่งหลักฐานแล้ว กรุณารอเจ้าหน้าที่ตรวจสอบและยืนยัน</div>
                 </form>
               )}
             </section>
@@ -506,33 +442,21 @@ function fmtDate(d) {
 }
 function thaiStatus(s) {
   switch (s) {
-    case "pending":
-      return "รอชำระ/แนบสลิป";
-    case "confirmed":
-      return "ยืนยันแล้ว";
-    case "checked_in":
-      return "เข้าพักแล้ว";
-    case "checked_out":
-      return "เช็คเอาท์แล้ว";
-    case "cancelled":
-      return "ยกเลิก";
-    case "expired":
-      return "หมดเวลา";
-    default:
-      return s || "-";
+    case "pending": return "รอชำระ/แนบสลิป";
+    case "confirmed": return "ยืนยันแล้ว";
+    case "checked_in": return "เข้าพักแล้ว";
+    case "checked_out": return "เช็คเอาท์แล้ว";
+    case "cancelled": return "ยกเลิก";
+    case "expired": return "หมดเวลา";
+    default: return s || "-";
   }
 }
 function thaiPayStatus(s) {
   switch (s) {
-    case "unpaid":
-      return "ยังไม่ชำระ";
-    case "pending":
-      return "รอตรวจสอบ";
-    case "confirmed":
-      return "อนุมัติแล้ว";
-    case "rejected":
-      return "ตีกลับ";
-    default:
-      return "ยังไม่ชำระ";
+    case "unpaid": return "ยังไม่ชำระ";
+    case "pending": return "รอตรวจสอบ";
+    case "confirmed": return "อนุมัติแล้ว";
+    case "rejected": return "ตีกลับ";
+    default: return "ยังไม่ชำระ";
   }
 }

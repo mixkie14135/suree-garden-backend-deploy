@@ -1,3 +1,4 @@
+// backend/src/modules/room/image/roomImage.routes.js
 const express = require('express');
 const { requireAdminAuth } = require('../../../middlewares/authAdmin'); // ปรับ path ให้ตรงของคุณ
 const {

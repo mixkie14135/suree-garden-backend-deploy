@@ -1,4 +1,3 @@
-// frontend/src/pages/bookings/BookingBanquet.jsx
 import { useEffect, useState, useMemo } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import Navbar from "../../components/Navbar";
@@ -28,19 +27,28 @@ export default function BookingBanquetSelect() {
   const [guests, setGuests] = useState(state?.guests || 1);
   const [available, setAvailable] = useState(null);
 
+  // กันเข้าจาก URL ตรง: ถ้า status !== 'available' → เตือน + redirect
+  const [locked, setLocked] = useState(false);
+
   // โหลดรายละเอียดห้องจัดเลี้ยง
   useEffect(() => {
     let alive = true;
     setLoading(true);
     banquetApi
       .detail(id, "images")
-      .then((r) => alive && setBanquet(r))
+      .then((r) => {
+        if (!alive) return;
+        setBanquet(r);
+        if (r?.status && r.status !== "available") {
+          setLocked(true);
+          alert("ห้องจัดเลี้ยงนี้ยังไม่พร้อมให้จองในขณะนี้");
+          navigate("/banquet", { replace: true });
+        }
+      })
       .catch((e) => alive && setErr(e.message || "โหลดข้อมูลไม่สำเร็จ"))
       .finally(() => alive && setLoading(false));
-    return () => {
-      alive = false;
-    };
-  }, [id]);
+    return () => { alive = false; };
+  }, [id, navigate]);
 
   const capacity = banquet?.capacity || 1;
   useEffect(() => {
@@ -51,6 +59,7 @@ export default function BookingBanquetSelect() {
   // ตรวจสอบความว่าง (เรียก backend)
   useEffect(() => {
     let alive = true;
+    if (locked) { setAvailable(null); return; }
     if (!eventDate || !startTime || !endTime) {
       setAvailable(null);
       return;
@@ -59,10 +68,8 @@ export default function BookingBanquetSelect() {
       .available({ date: eventDate, start: startTime, end: endTime })
       .then((res) => alive && setAvailable(res?.available !== false))
       .catch(() => alive && setAvailable(null));
-    return () => {
-      alive = false;
-    };
-  }, [eventDate, startTime, endTime]);
+    return () => { alive = false; };
+  }, [eventDate, startTime, endTime, locked]);
 
   // hour options (ล็อกเป็นรายชั่วโมง)
   const startHourOptions = useMemo(() => buildHourOptions(0, 23), []);
@@ -85,6 +92,7 @@ export default function BookingBanquetSelect() {
   }, [startTime, endTime]);
 
   const goConfirm = () => {
+    if (locked) return;
     if (!eventDate || !startTime || !endTime)
       return alert("กรุณาเลือกวันและเวลาให้ครบถ้วน");
     if (guests < 1 || guests > capacity)
@@ -126,7 +134,7 @@ export default function BookingBanquetSelect() {
               <div className="bkSubTitle">ห้องจัดเลี้ยง</div>
             </div>
 
-            {/* Hero — ใช้ background cover ให้ภาพแนวตั้ง/แนวนอนแสดงสวย */}
+            {/* Hero */}
             {hero ? (
               <div
                 className="brHero"
@@ -148,13 +156,14 @@ export default function BookingBanquetSelect() {
             )}
 
             {/* แถบเลือกข้อมูล */}
-            <div className="bkBar">
+            <div className={`bkBar ${locked ? "is-disabled" : ""}`} aria-disabled={locked}>
               <BarCell label="วันที่จัดงาน">
                 <input
                   type="date"
                   className="bkInput"
                   value={eventDate}
                   onChange={(e) => setEventDate(e.target.value)}
+                  disabled={locked}
                 />
               </BarCell>
 
@@ -163,6 +172,7 @@ export default function BookingBanquetSelect() {
                   className="bkInput"
                   value={startTime || ""}
                   onChange={(e) => setStartTime(e.target.value)}
+                  disabled={locked}
                 >
                   <option value="" disabled>เลือกเวลาเริ่ม</option>
                   {startHourOptions.map((t) => (
@@ -176,6 +186,7 @@ export default function BookingBanquetSelect() {
                   className="bkInput"
                   value={endTime || ""}
                   onChange={(e) => setEndTime(e.target.value)}
+                  disabled={locked}
                 >
                   <option value="" disabled>เลือกเวลาสิ้นสุด</option>
                   {endHourOptions.map((t) => (
@@ -199,6 +210,7 @@ export default function BookingBanquetSelect() {
                   className="bkInput"
                   value={guests}
                   onChange={(e) => setGuests(Number(e.target.value))}
+                  disabled={locked}
                 />
               </BarCell>
 
@@ -207,8 +219,9 @@ export default function BookingBanquetSelect() {
                 className="bkBarGo"
                 onClick={goConfirm}
                 aria-label="ถัดไป / จองเลย"
+                disabled={locked}
               >
-                ถัดไป / จองเลย
+                จองเลย
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
                   <path d="M8 5l8 7-8 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
@@ -216,7 +229,7 @@ export default function BookingBanquetSelect() {
             </div>
 
             {/* แสดงสถานะความว่าง */}
-            {eventDate && startTime && endTime && (
+            {!locked && eventDate && startTime && endTime && (
               <div style={{ marginTop: 8, color: available ? "#2e7d32" : "crimson" }}>
                 {available == null
                   ? "กำลังตรวจสอบ..."
@@ -231,6 +244,7 @@ export default function BookingBanquetSelect() {
               <h3 className="bkSecTitle">รายละเอียดห้องจัดเลี้ยง</h3>
               <p className="bkDesc">
                 {banquet.description || "ยังไม่มีรายละเอียดเพิ่มเติม"}
+                {locked && <em style={{ marginLeft: 8, color: "crimson" }}>• ไม่พร้อมให้จอง</em>}
               </p>
             </section>
           </>

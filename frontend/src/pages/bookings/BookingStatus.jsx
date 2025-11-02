@@ -252,8 +252,8 @@ export default function BookingStatus() {
                 </div>
               )}
               {payStatus === "confirmed" && (
-                <div className="emptyBox" style={{ background:"#ecfff1", borderColor:"#a7f3c4", color:"#0f7a3b" }}>
-                  การชำระเงินได้รับการยืนยันแล้ว ขอบคุณค่ะ
+                <div className="emptyBox" style={{ background:"#FFF59D", borderColor:"#a7f3c4", color:"#0f7a3b" }}>
+                  กรุณาเก็บสลิปไว้เป็นหลักฐานในการเข้าพัก
                 </div>
               )}
               {payStatus === "rejected" && (

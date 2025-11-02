@@ -15,7 +15,6 @@ import {
 const FILTER_OPTIONS = [
   { value: "all",         label: "ทั้งหมด" },
   { value: "available",   label: "ว่าง" },
-  { value: "occupied",    label: "ไม่ว่าง" },
   { value: "maintenance", label: "ระหว่างซ่อม" },
 ];
 
@@ -525,7 +524,6 @@ export default function AdminBanquets({ embedded = false }) {
                   <label>สถานะ</label>
                   <select value={form.status} onChange={(e) => setField("status", e.target.value)}>
                     <option value="available">ว่าง</option>
-                    <option value="occupied">ไม่ว่าง</option>
                     <option value="maintenance">ระหว่างซ่อม</option>
                   </select>
                 </div>
@@ -533,7 +531,6 @@ export default function AdminBanquets({ embedded = false }) {
 
               {/* รูปในโมดัล (create เท่านั้น) */}
               <div className="modalGallery">
-                <div className="gTitle">รูปภาพ {isCreate ? "(อัปโหลดพร้อมสร้างห้อง)" : "(อ่านจากระบบ)"}</div>
 
                 {isCreate ? (
                   <>
@@ -609,22 +606,20 @@ export default function AdminBanquets({ embedded = false }) {
           </div>
 
           {imgMgr.lightbox.open && imgMgr.items.length > 0 && (
-            <div className="modalOverlay" onClick={closeLightbox} style={{ background:"rgba(0,0,0,.65)" }}>
-              <div className="modalCard" style={{ background:"#111", color:"#fff", width:"min(1100px,96vw)" }} onClick={(e)=>e.stopPropagation()}>
-                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-                  <div>รูป {imgMgr.lightbox.index + 1} / {imgMgr.items.length}</div>
-                  <div>
-                    <button className="btnText" onClick={()=>nextLightbox(-1)}>&lt;</button>
-                    <button className="btnText" onClick={()=>nextLightbox(+1)}>&gt;</button>
-                    <button className="btnText" onClick={closeLightbox}>ปิด</button>
-                  </div>
-                </div>
-                <div style={{ marginTop:8 }}>
-                  <img
-                    src={fileUrl(imgMgr.items[imgMgr.lightbox.index].url)}
-                    alt=""
-                    style={{ width:"100%", maxHeight:"70vh", objectFit:"contain", display:"block", background:"#000" }}
-                  />
+            <div
+              className="lightboxOverlay"
+              onClick={closeLightbox}
+            >
+              <div className="lightboxContent" onClick={(e) => e.stopPropagation()}>
+                <button className="lightboxClose" onClick={closeLightbox}>×</button>
+                <button className="lightboxPrev" onClick={() => nextLightbox(-1)}>‹</button>
+                <img
+                  src={fileUrl(imgMgr.items[imgMgr.lightbox.index].url)}
+                  alt=""
+                />
+                <button className="lightboxNext" onClick={() => nextLightbox(+1)}>›</button>
+                <div className="lightboxCounter">
+                  {imgMgr.lightbox.index + 1} / {imgMgr.items.length}
                 </div>
               </div>
             </div>
@@ -635,15 +630,16 @@ export default function AdminBanquets({ embedded = false }) {
   );
 }
 
-/* ==== Sub components ==== */
 function StatusBadge({ status }) {
   const label =
     status === "available" ? "ว่าง" :
-    status === "maintenance" ? "ระหว่างซ่อม" : "ไม่ว่าง";
+    status === "maintenance" ? "ระหว่างซ่อม" : "ไม่ระบุ";
   const cls = status === "available" ? "ok" :
               status === "maintenance" ? "" : "bad";
   return <span className={"pill " + cls}>{label}</span>;
 }
+
+
 function PriceHourTag({ value }) {
   return <span className="priceTag">{Number(value || 0).toLocaleString()} <small>บาท/ชั่วโมง</small></span>;
 }

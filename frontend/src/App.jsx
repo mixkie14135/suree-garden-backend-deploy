@@ -19,7 +19,7 @@ import HomeFull from "./pages/HomeFull.jsx";
 import Rooms from "./pages/Rooms.jsx";
 import RoomType from "./pages/RoomType.jsx";
 import Banquet from "./pages/Banquet.jsx";
-import BookingRoom from "./pages/bookings/bookingroom.jsx"; // ✅ เตรียมสร้างหน้านี้
+import BookingRoom from "./pages/bookings/bookingroom.jsx"; 
 import BookingRoomConfirm from "./pages/bookings/BookingRoomConfirm.jsx";
 import BookingPayment from "./pages/bookings/BookingPayment.jsx";
 import BookingSuccess from "./pages/bookings/BookingSuccess.jsx";
@@ -32,21 +32,7 @@ import BookingSuccessBanquet from "./pages/bookings/BookingSuccessBanquet.jsx";
 
 
 
-/* ----------------- Temporary placeholder ----------------- */
-function AdminPayments() {
-  return (
-    <div className="adminPage">
-      <div className="adminPageHeader">
-        <h2>อนุมัติสลิป</h2>
-      </div>
-      <div className="emptyBox">
-        <p>หน้านี้จะแสดงสลิปที่สถานะ <strong>pending</strong> ให้กด Approve / Reject</p>
-      </div>
-    </div>
-  );
-}
-
-/* -------------------------------- Public home -------------------------------- */
+/* หน้าแรก */
 function PublicHome() {
   return (
     <>
@@ -78,6 +64,7 @@ export default function App() {
         }
       />
 
+      {/* ห้องพัก */}
       <Route
         path="/rooms"
         element={
@@ -90,7 +77,7 @@ export default function App() {
         }
       />
 
-      {/* ห้องจัดเลี้ยง (placeholder) */}
+      {/* ห้องจัดเลี้ยง */}
       <Route
         path="/banquet"
         element={
@@ -106,15 +93,14 @@ export default function App() {
       {/* รายละเอียดห้องเดี่ยว */}
       <Route path="/rooms/:slug" element={<RoomType />} />
 
-      {/* Admin Auth */}
+      {/* หน้าเข้าสู่ระบบผู้ดูแล */}
       <Route path="/admin/login" element={<AdminLogin />} />
 
-      {/* Admin Area (protected) */}
+      {/* ป้องกันการเข้าถึงโดยไม่ได้รับอนุญาต */}
       <Route path="/admin" element={<ProtectedRoute />}>
         <Route element={<AdminLayout />}>
           <Route index element={<AdminDashboard />} />
           <Route path="rooms" element={<AdminRoomBanquet />} />
-          <Route path="payments" element={<AdminPayments />} />
           <Route path="bookings" element={<AdminBookings />} />
         </Route>
       </Route>
@@ -122,12 +108,13 @@ export default function App() {
       {/* กันลิงก์เก่าที่อาจยังชี้ /home อยู่ */}
       <Route path="/home" element={<Navigate to="/" replace />} />
 
-      {/* ✅ หน้าจองห้องพัก */}
+      {/* หน้าจองห้องพัก */}
       <Route
         path="/bookings/bookingroom/:id"
         element={<BookingRoom />}
       />
 
+      {/* หน้า ยืนยันการจองห้องพัก */}
       <Route 
         path="/bookings/bookingroom/:id/confirm" 
         element={<BookingRoomConfirm />} 
@@ -138,6 +125,7 @@ export default function App() {
       element={<BookingPayment />} 
       />
 
+      {/* หน้า ชำระเงินสำเร็จ */}
       <Route path="/bookings/success" 
       element={<BookingSuccess />} 
       />

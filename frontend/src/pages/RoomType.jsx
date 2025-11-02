@@ -1,4 +1,3 @@
-// frontend/src/pages/RoomType.jsx
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { useParams, Navigate, useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
@@ -11,6 +10,28 @@ import iconView from "../icons/view.svg";
 import iconBath from "../icons/bath-room.svg";
 
 const SPEC_ICON = { bed: iconBed, area: iconArea, view: iconView, bathroom: iconBath };
+
+function StatusRibbon({ show, label = "สถานะ: ไม่พร้อมให้จอง" }) {
+  if (!show) return null;
+  return (
+    <div
+      style={{
+        position: "absolute",
+        top: 8,
+        left: -8,
+        background: "crimson",
+        color: "#fff",
+        padding: "6px 12px",
+        transform: "rotate(-8deg)",
+        fontWeight: 700,
+        boxShadow: "0 2px 8px rgba(0,0,0,.15)",
+        borderRadius: 6,
+      }}
+    >
+      {label}
+    </div>
+  );
+}
 
 export default function RoomType() {
   const { slug } = useParams();
@@ -92,9 +113,11 @@ export default function RoomType() {
           ) : (
             rooms.map((r) => {
               const img = r?.room_image?.[0]?.image_url ? fileUrl(r.room_image[0].image_url) : null;
+              const canBook = r?.status === "available";
               return (
                 <article key={r.room_id} className="roomCard">
-                  <div className="rtCardImg">
+                  <div className="rtCardImg" style={{ position:"relative" }}>
+                    <StatusRibbon show={!canBook} />
                     {img ? (
                       <img src={img} alt={r.room_number} loading="lazy" />
                     ) : (
@@ -127,20 +150,18 @@ export default function RoomType() {
                       <button
                         type="button"
                         className="priceBtn"
-                        onClick={() => navigate(`/bookings/bookingroom/${r.room_id}`)}
+                        disabled={!canBook}
+                        aria-disabled={!canBook}
+                        onClick={() => canBook && navigate(`/bookings/bookingroom/${r.room_id}`)}
                         aria-label={`จองห้อง ${r.room_number}`}
+                        title={canBook ? "เริ่มจองห้องนี้" : "ห้องนี้ยังไม่พร้อมให้จอง"}
+                        style={!canBook ? { opacity: 0.6, cursor: "not-allowed" } : undefined}
                       >
                         <span className="baht">฿</span>
                         <strong>{Number(r.price).toLocaleString()}</strong>
                         <span className="per">บาท / คืน</span>
                       </button>
-
-                      <a href="#" className="detailBtn">
-                        รายละเอียด
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-                          <path d="M8 5l8 7-8 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      </a>
+                      {!canBook && <div style={{ fontSize:12, color:"#b00020", marginTop:6 }}>ไม่พร้อมให้จอง</div>}
                     </div>
                   </div>
                 </article>

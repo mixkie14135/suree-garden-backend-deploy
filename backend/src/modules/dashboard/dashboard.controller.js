@@ -1,24 +1,20 @@
+// backend/src/modules/dashboard/dashboard.controller.js
 const prisma = require('../../config/prisma');
+const { thaiPeriodToUtcRange } = require('../../utils/date');
 
-/* ---------------------- helpers: คำนวณช่วงเวลาอย่างง่าย ---------------------- */
-function rangeFor(period = 'today') {
-  const now = new Date();
-  if (period === 'month') {
-    const start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
-    const end   = new Date(now.getFullYear(), now.getMonth() + 1, 1, 0, 0, 0, 0);
-    return [start, end];
-  }
-  const start = new Date(now); start.setHours(0, 0, 0, 0);
-  const end = new Date(start); end.setDate(start.getDate() + 1);
-  return [start, end];
-}
-
-/** เงื่อนไข “ช่วงวันซ้อนทับ” ของห้องพัก: (checkin < end) && (checkout > start) */
+/** เงื่อนไขช่วงวันซ้อนทับของ ‘การเข้าพัก’:
+ *  ใช้รูปแบบ [checkin, checkout) กับช่วง [start, end) */
 function overlapWhereForRooms(start, end) {
-  return { AND: [{ checkin_date: { lt: end } }, { checkout_date: { gt: start } }] };
+  return {
+    AND: [
+      { checkin_date:  { lt: end  } },
+      { checkout_date: { gt: start } },
+    ],
+  };
 }
 
-/* ============================== ROOMS: Status ============================== */
+/* ============================== ROOMS ============================== */
+
 // GET /api/dashboard/rooms/status
 exports.roomsStatus = async (_req, res) => {
   try {
@@ -34,12 +30,11 @@ exports.roomsStatus = async (_req, res) => {
   }
 };
 
-/* ============================ ROOMS: Utilization =========================== */
 // GET /api/dashboard/rooms/utilization?period=today|month
 exports.roomsUtilization = async (req, res) => {
   try {
     const period = req.query.period === 'month' ? 'month' : 'today';
-    const [start, end] = rangeFor(period);
+    const [start, end] = thaiPeriodToUtcRange(period); // ✅ เวลาไทย (+7)
 
     const [totalRooms, maintenance] = await Promise.all([
       prisma.room.count(),
@@ -57,8 +52,8 @@ exports.roomsUtilization = async (req, res) => {
       }),
     ]);
 
-    const utilNumerator = occupiedOrBooked + pendingHolds;
-    const utilizationPct = roomsReady > 0 ? Math.round((utilNumerator / roomsReady) * 100) : 0;
+    const utilizationPct =
+      roomsReady > 0 ? Math.round(((occupiedOrBooked + pendingHolds) / roomsReady) * 100) : 0;
 
     res.json({ period, occupiedOrBooked, pendingHolds, roomsReady, utilizationPct });
   } catch (err) {
@@ -66,12 +61,10 @@ exports.roomsUtilization = async (req, res) => {
   }
 };
 
-/* =============================== ROOMS: Turnover =========================== */
-// GET /api/dashboard/rooms/turnover   (โฟกัสวันนี้)
+// GET /api/dashboard/rooms/turnover   (today only)
 exports.roomsTurnover = async (_req, res) => {
   try {
-    const [start, end] = rangeFor('today');
-
+    const [start, end] = thaiPeriodToUtcRange('today'); // ✅ เวลาไทย
     const [checkinToday, checkoutToday] = await Promise.all([
       prisma.reservation_room.count({
         where: { checkin_date: { gte: start, lt: end }, status: { in: ['confirmed', 'checked_in'] } },
@@ -80,25 +73,22 @@ exports.roomsTurnover = async (_req, res) => {
         where: { checkout_date: { gte: start, lt: end }, status: { in: ['confirmed', 'checked_in'] } },
       }),
     ]);
-
     res.json({ checkinToday, checkoutToday });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
 
-/* ======================= ROOMS: Reservations by Room Type ================== */
 // GET /api/dashboard/rooms/by-type?period=today|month
 exports.roomsByType = async (req, res) => {
   try {
     const period = req.query.period === 'month' ? 'month' : 'today';
-    const [start, end] = rangeFor(period);
+    const [start, end] = thaiPeriodToUtcRange(period); // ✅ เวลาไทย
 
-    // ดึงทุกประเภทห้อง + LEFT JOIN ไปยังห้อง + การจองที่ซ้อนทับช่วงเวลา
     const rows = await prisma.$queryRaw`
       SELECT 
-        rt.room_type_id     AS id,
-        rt.type_name        AS type_name,
+        rt.room_type_id AS id,
+        rt.type_name    AS type_name,
         COUNT(DISTINCT rr.reservation_id) AS reservations
       FROM room_type rt
       LEFT JOIN room r
@@ -106,24 +96,23 @@ exports.roomsByType = async (req, res) => {
       LEFT JOIN reservation_room rr
         ON rr.room_id = r.room_id
        AND rr.status IN ('confirmed','checked_in')
-       AND rr.checkin_date < ${end}
+       AND rr.checkin_date  < ${end}
        AND rr.checkout_date > ${start}
       GROUP BY rt.room_type_id, rt.type_name
       ORDER BY reservations DESC, rt.type_name;
     `;
 
-    const items = rows.map(r => ({
-      type_name: r.type_name,
-      reservations: Number(r.reservations || 0),
-    }));
-
-    res.json({ period, items });
+    res.json({
+      period,
+      items: rows.map(r => ({ type_name: r.type_name, reservations: Number(r.reservations || 0) })),
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
 
-/* ============================== BANQUETS: Status =========================== */
+/* ============================= BANQUETS ============================= */
+
 // GET /api/dashboard/banquets/status
 exports.banquetsStatus = async (_req, res) => {
   try {
@@ -139,12 +128,11 @@ exports.banquetsStatus = async (_req, res) => {
   }
 };
 
-/* ============================ BANQUETS: Utilization ======================== */
 // GET /api/dashboard/banquets/utilization?period=today|month
 exports.banquetsUtilization = async (req, res) => {
   try {
     const period = req.query.period === 'month' ? 'month' : 'today';
-    const [start, end] = rangeFor(period);
+    const [start, end] = thaiPeriodToUtcRange(period); // ✅ เวลาไทย
 
     const [total, maintenance] = await Promise.all([
       prisma.banquet_room.count(),
@@ -161,8 +149,8 @@ exports.banquetsUtilization = async (req, res) => {
       }),
     ]);
 
-    const utilNumerator = confirmedOrInUse + pendingHolds;
-    const utilizationPct = roomsReady > 0 ? Math.round((utilNumerator / roomsReady) * 100) : 0;
+    const utilizationPct =
+      roomsReady > 0 ? Math.round(((confirmedOrInUse + pendingHolds) / roomsReady) * 100) : 0;
 
     res.json({ period, occupiedOrBooked: confirmedOrInUse, pendingHolds, roomsReady, utilizationPct });
   } catch (err) {
@@ -170,21 +158,23 @@ exports.banquetsUtilization = async (req, res) => {
   }
 };
 
-/* ================================= REVENUE ================================= */
+/* ============================== REVENUE ============================== */
+
 // GET /api/dashboard/revenue?period=today|month
+// นับรายได้ตาม “เวลาไทย” (paid_at ใน DB เป็น UTC)
 exports.revenue = async (req, res) => {
   try {
     const period = req.query.period === 'month' ? 'month' : 'today';
-    const [start, end] = rangeFor(period);
+    const [startUtc, endUtc] = thaiPeriodToUtcRange(period); // ✅ เวลาไทย
 
     const [roomAgg, banquetAgg] = await Promise.all([
       prisma.payment_room.aggregate({
         _sum: { amount: true },
-        where: { payment_status: 'confirmed', paid_at: { gte: start, lt: end } },
+        where: { payment_status: 'confirmed', paid_at: { gte: startUtc, lt: endUtc } },
       }),
       prisma.payment_banquet.aggregate({
         _sum: { amount: true },
-        where: { payment_status: 'confirmed', paid_at: { gte: start, lt: end } },
+        where: { payment_status: 'confirmed', paid_at: { gte: startUtc, lt: endUtc } },
       }),
     ]);
 

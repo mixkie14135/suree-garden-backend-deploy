@@ -1,4 +1,3 @@
-// src/pages/bookings/BookingRoomConfirm.jsx
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useSearchParams, useNavigate, useLocation } from "react-router-dom";
 import Navbar from "../../components/Navbar";
@@ -20,6 +19,9 @@ export default function BookingRoomConfirm() {
   const [err, setErr] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  // กันเข้าจาก URL ตรง (หน้า confirm) ถ้าไม่พร้อมให้จอง → เด้งกลับหน้าเลือก
+  const [locked, setLocked] = useState(false);
+
   useEffect(() => {
     let alive = true;
     if (!checkin || !checkout) {
@@ -28,11 +30,21 @@ export default function BookingRoomConfirm() {
     }
     setLoading(true);
     roomApi.detail(id, "images,type")
-      .then(r => alive && setRoom(r))
+      .then(r => {
+        if (!alive) return;
+        setRoom(r);
+        if (r?.status && r.status !== "available") {
+          setLocked(true);
+          alert("ห้องนี้ยังไม่พร้อมให้จองในขณะนี้");
+          // กลับไปหน้าเลือกวัน/แขก พร้อมค่าเดิม
+          const q = new URLSearchParams({ checkin, checkout, guests: String(guests) }).toString();
+          navigate(`/bookings/bookingroom/${id}?${q}`, { replace: true });
+        }
+      })
       .catch(e => alive && setErr(e.message || "โหลดข้อมูลห้องไม่สำเร็จ"))
       .finally(() => alive && setLoading(false));
     return () => { alive = false; };
-  }, [id, checkin, checkout, navigate]);
+  }, [id, checkin, checkout, guests, navigate]);
 
   const nights = useMemo(() => {
     const ci = new Date(checkin), co = new Date(checkout);
@@ -53,6 +65,7 @@ export default function BookingRoomConfirm() {
 
   async function handleSubmit(e) {
     e.preventDefault();
+    if (locked) return;
     if (overCap) { alert(`จำนวนผู้เข้าพักเกินความจุ (สูงสุด ${capacity})`); return; }
 
     const fd = new FormData(e.currentTarget);
@@ -82,9 +95,7 @@ export default function BookingRoomConfirm() {
         state: {
           reservation_code: rc,
           total,
-          // ส่ง URL ปัจจุบันกลับไปเป็น back_url
           back_url: location.pathname + location.search,
-          // แนบค่าไว้ด้วย เผื่ออยากใช้ประกอบการสร้างลิงก์กรณี back_url ไม่มี
           back_to: { id: Number(id), checkin, checkout, guests }
         }
       });
@@ -99,14 +110,13 @@ export default function BookingRoomConfirm() {
     <>
       <Navbar />
       <main className="container" style={{ padding: "28px 0 60px" }}>
-        {/* ✅ ใช้ Stepper แบบเดียวกับหน้า Payment */}
         <Stepper step={1} />
 
         {loading ? <div className="loading">กำลังโหลด...</div> : !room ? (
           <div className="emptyBox">{err || "ไม่พบข้อมูลห้อง"}</div>
         ) : (
           <div style={{ display:"grid", gridTemplateColumns:"360px 1fr", gap:28 }}>
-            {/* สรุปทางซ้าย */}
+            {/* ซ้าย: สรุป */}
             <aside style={{ border:"1px solid var(--line)", borderRadius:8, padding:16 }}>
               <h3 style={{ margin:"0 0 12px" }}>{room.room_number}</h3>
               <div style={{ borderRadius:8, overflow:"hidden", marginBottom:12 }}>
@@ -115,32 +125,29 @@ export default function BookingRoomConfirm() {
 
               <SummaryRow label="ประเภทห้องพัก">{room?.room_type?.type_name || "-"}</SummaryRow>
               <SummaryRow label="วันที่">{checkin} – {checkout} ({nights} คืน)</SummaryRow>
-              <SummaryRow label="จำนวนผู้เข้าพัก">{guests} คน </SummaryRow>
-
-              <SummaryRow label="ประเภทเตียง">เตียงใหญ่</SummaryRow>
-              <SummaryRow label="จำนวนเตียง">1 เตียง</SummaryRow>
+              <SummaryRow label="จำนวนผู้เข้าพัก">{guests} คน {locked && <em style={{ color:"crimson" }}>• ไม่พร้อมให้จอง</em>}</SummaryRow>
 
               <SummaryRow label="ราคา/คืน">{pricePerNight.toLocaleString()} บาท</SummaryRow>
               <div style={{ marginTop:12, fontWeight:800, textAlign:"right" }}>รวมทั้งสิ้น  {total.toLocaleString()} บาท</div>
               {overCap && <div style={{ color:"crimson", marginTop:6 }}>เกินความจุสูงสุด {capacity} คน</div>}
             </aside>
 
-            {/* ฟอร์มทางขวา */}
+            {/* ขวา: ฟอร์ม */}
             <section>
               <h3 style={{ marginTop:0 }}>กรอกข้อมูลผู้จอง</h3>
               {err && <div style={{ color:"crimson", marginBottom:8 }}>{err}</div>}
 
               <form onSubmit={handleSubmit} style={{ display:"grid", gap:12 }}>
                 <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-                  <label>ชื่อจริง *<input name="first_name" className="bkInput" required /></label>
-                  <label>นามสกุล *<input name="last_name" className="bkInput" required /></label>
+                  <label>ชื่อจริง *<input name="first_name" className="bkInput" required disabled={locked} /></label>
+                  <label>นามสกุล *<input name="last_name" className="bkInput" required disabled={locked} /></label>
                 </div>
                 <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-                  <label>อีเมล *<input type="email" name="email" className="bkInput" required /></label>
-                  <label>หมายเลขโทรศัพท์ *<input type="tel" name="phone" className="bkInput" required /></label>
+                  <label>อีเมล *<input type="email" name="email" className="bkInput" required disabled={locked} /></label>
+                  <label>หมายเลขโทรศัพท์ *<input type="tel" name="phone" className="bkInput" required disabled={locked} /></label>
                 </div>
                 <label>เพิ่มเติม (ไม่บังคับ)
-                  <textarea className="bkInput" rows={4} placeholder="เช่น ขอเตียงเสริม"/>
+                  <textarea className="bkInput" rows={4} placeholder="เช่น ขอเตียงเสริม" disabled={locked}/>
                 </label>
 
                 <div style={{ display:"flex", gap:12, marginTop:6 }}>
@@ -151,7 +158,7 @@ export default function BookingRoomConfirm() {
                   >
                     ยกเลิก
                   </button>
-                  <button type="submit" className="btnPrimary" disabled={submitting || overCap}>
+                  <button type="submit" className="btnPrimary" disabled={submitting || overCap || locked}>
                     {submitting ? "กำลังส่ง..." : "ยืนยัน"}
                   </button>
                 </div>

@@ -81,6 +81,17 @@ exports.createReservationBanquet = async (req, res) => {
       return res.status(400).json({ message: e.message || "resolve customer failed" });
     }
 
+    const banq = await prisma.banquet_room.findUnique({
+      where: { banquet_id: Number(banquet_id) },
+      select: { banquet_id: true, status: true, name: true }
+    });
+    if (!banq) {
+      return res.status(404).json({ message: 'Banquet room not found' });
+    }
+    if (banq.status !== 'available') {
+      return res.status(409).json({ message: 'Banquet room is currently not available for booking' });
+    }
+
     const eventDayUtc = toUtcMidnight(day);
 
     let code = genReservationCode(8);

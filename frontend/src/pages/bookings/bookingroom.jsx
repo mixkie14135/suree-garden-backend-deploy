@@ -1,4 +1,3 @@
-// frontend/src/pages/bookings/bookingroom.jsx
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import Navbar from "../../components/Navbar";
@@ -18,16 +17,30 @@ export default function BookingRoomSelect() {
   const [guests, setGuests]     = useState(state?.guests || 1);
   const [available, setAvailable] = useState(null);
 
+  // กันเข้าจาก URL ตรง: ถ้า status !== 'available' → เตือน + redirect
+  const [locked, setLocked] = useState(false);
+
   useEffect(() => {
     let alive = true;
     setLoading(true);
     roomApi
-      .detail(id, "images,type")               // ✅ ดึง type ด้วย (มี description + amenities)
-      .then(r => alive && setRoom(r))
-      .catch(e => alive && setErr(e.message || "โหลดข้อมูลห้องไม่สำเร็จ"))
+      .detail(id, "images,type") // ต้องมี field status มาพร้อม
+      .then((r) => {
+        if (!alive) return;
+        setRoom(r);
+        if (r?.status && r.status !== "available") {
+          setLocked(true);
+          alert("ห้องนี้ยังไม่พร้อมให้จองในขณะนี้");
+          navigate("/rooms", { replace: true });
+        }
+      })
+      .catch((e) => {
+        if (!alive) return;
+        setErr(e.message || "โหลดข้อมูลห้องไม่สำเร็จ");
+      })
       .finally(() => alive && setLoading(false));
     return () => { alive = false; };
-  }, [id]);
+  }, [id, navigate]);
 
   const capacity = room?.capacity || 1;
 
@@ -45,15 +58,18 @@ export default function BookingRoomSelect() {
 
   useEffect(() => {
     let alive = true;
+    // ถ้าถูกล็อก ไม่ต้องเช็คความว่าง
+    if (locked) { setAvailable(null); return; }
     if (!checkin || !checkout || nights <= 0) { setAvailable(null); return; }
     roomApi
       .availability(id, checkin, checkout)
       .then(res => alive && setAvailable(!!res?.available))
       .catch(() => alive && setAvailable(null));
     return () => { alive = false; };
-  }, [id, checkin, checkout, nights]);
+  }, [id, checkin, checkout, nights, locked]);
 
   const goConfirm = () => {
+    if (locked) return;
     if (!checkin || !checkout || nights <= 0) return alert("กรุณาเลือกวันเช็คอิน/เช็คเอาท์ให้ถูกต้อง");
     if (guests < 1 || guests > capacity) return alert(`จำนวนผู้เข้าพักต้องอยู่ระหว่าง 1–${capacity}`);
     if (available === false) return alert("ช่วงวันที่เลือกไม่ว่าง");
@@ -66,10 +82,9 @@ export default function BookingRoomSelect() {
     return url ? fileUrl(url) : null;
   }, [room]);
 
-  // ===== amenities จาก room_type.amenities (เป็น JSON) =====
+  // ===== amenities จาก room_type.amenities =====
   const amenities = useMemo(() => {
     const arr = Array.isArray(room?.room_type?.amenities) ? room.room_type.amenities : [];
-    // โชว์เฉพาะ group === "amenity" หรือถ้าไม่ได้แบ่ง group ก็โชว์ทั้งหมด
     const filtered = arr.filter(a => !a.group || a.group === "amenity");
     return filtered.map(a => a.text || a.key).filter(Boolean);
   }, [room?.room_type?.amenities]);
@@ -90,64 +105,57 @@ export default function BookingRoomSelect() {
               <div className="bkSubTitle">{room.room_type?.type_name_en || ""}</div>
             </div>
 
-            {/* Hero: ปรับสัดส่วนให้เตี้ยลง + cover */}
+            {/* Hero */}
             <div className="brHero">
-              {hero ? (
-                <img src={hero} alt="" />
-              ) : (
-                <div className="brHeroPh" />
-              )}
+              {hero ? <img src={hero} alt="" /> : <div className="brHeroPh" />}
             </div>
 
-            
-<div className="bkBar">
-  <BarCell label="ประเภทห้อง">
-    <div className="bkType">
-      {room?.room_type?.type_name || "-"}
-      {room?.capacity ? <small> (สูงสุด {room.capacity} คน)</small> : null}
-    </div>
-  </BarCell>
+            <div className={`bkBar ${locked ? "is-disabled" : ""}`} aria-disabled={locked}>
+              <BarCell label="ประเภทห้อง">
+                <div className="bkType">
+                  {room?.room_type?.type_name || "-"}
+                  {room?.capacity ? <small> (สูงสุด {room.capacity} คน)</small> : null}
+                  {locked && <em style={{ marginLeft: 8, color: "crimson" }}>• ไม่พร้อมให้จอง</em>}
+                </div>
+              </BarCell>
 
-  <BarCell label="เช็คอิน">
-    <input type="date" className="bkInput" value={checkin} onChange={e=>setCheckin(e.target.value)} />
-  </BarCell>
+              <BarCell label="เช็คอิน">
+                <input type="date" className="bkInput" value={checkin} onChange={e=>setCheckin(e.target.value)} disabled={locked} />
+              </BarCell>
 
-  <BarCell label="เช็คเอาท์">
-    <input type="date" className="bkInput" value={checkout} onChange={e=>setCheckout(e.target.value)} />
-  </BarCell>
+              <BarCell label="เช็คเอาท์">
+                <input type="date" className="bkInput" value={checkout} onChange={e=>setCheckout(e.target.value)} disabled={locked} />
+              </BarCell>
 
- <BarCell label={
-  <div className="bkLabelWithCapacity">
-    จำนวนผู้เข้าพัก
-    <small className="bkCapacityHelp">
-      สูงสุด {capacity} คน
-    </small>
-  </div>
-  }>
-  <div className="bkGuests">
-    <input
-      type="number"
-      min={1}
-      max={capacity}
-      className="bkInput"
-      value={guests}
-      onChange={e=>setGuests(Number(e.target.value))}
-    />
-  </div>
-</BarCell>
+              <BarCell label={
+                <div className="bkLabelWithCapacity">
+                  จำนวนผู้เข้าพัก
+                  <small className="bkCapacityHelp">สูงสุด {capacity} คน</small>
+                </div>
+              }>
+                <div className="bkGuests">
+                  <input
+                    type="number"
+                    min={1}
+                    max={capacity}
+                    className="bkInput"
+                    value={guests}
+                    onChange={e=>setGuests(Number(e.target.value))}
+                    disabled={locked}
+                  />
+                </div>
+              </BarCell>
 
-   {/* บล็อกสีเขียวทั้งช่อง */}
-  <button type="button" className="bkBarGo" onClick={goConfirm} aria-label="ถัดไป / จองเลย">
-    ถัดไป / จองเลย
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path d="M8 5l8 7-8 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  </button>
-</div>
-{/* จบแถบเลือกวัน/แขก + ปุ่มไปขั้นถัดไป
+              <button type="button" className="bkBarGo" onClick={goConfirm} aria-label="ถัดไป / จองเลย" disabled={locked}>
+                จองเลย
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+                  <path d="M8 5l8 7-8 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+            </div>
 
             {/* สถานะความว่าง */}
-            {checkin && checkout && (
+            {!locked && checkin && checkout && (
               <div style={{ marginTop: 8, color: available ? "#2e7d32" : "crimson" }}>
                 {available == null
                   ? "กำลังตรวจสอบ..."
@@ -157,24 +165,19 @@ export default function BookingRoomSelect() {
               </div>
             )}
 
-            {/* ===== Description (จาก room_type.description ถ้าไม่มีใช้ room.description) ===== */}
+            {/* Description */}
             <section className="bkSection">
-                <h3 className="bkSecTitle">
-                    ห้อง{room.room_type?.type_name || "—"} {/* <--- โค้ดใหม่ */}
-                </h3>
-                <p className="bkDesc">
-                    {room.room_type?.description || room.description || "—"}
-                </p>
+              <h3 className="bkSecTitle">ห้อง{room.room_type?.type_name || "—"}</h3>
+              <p className="bkDesc">
+                {room.room_type?.description || room.description || "—"}
+              </p>
             </section>
 
-            {/* ===== Amenities ===== */}
             {!!amenities.length && (
               <section className="bkSection">
                 <h3 className="bkSecTitle">สิ่งอำนวยความสะดวก</h3>
                 <ul className="bkAmenGrid">
-                  {amenities.map((t, i) => (
-                    <li key={i} className="bkAmenItem">{t}</li>
-                  ))}
+                  {amenities.map((t, i) => <li key={i} className="bkAmenItem">{t}</li>)}
                 </ul>
               </section>
             )}
