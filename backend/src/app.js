@@ -1,4 +1,3 @@
-// backend/src/app.js
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
@@ -31,16 +30,43 @@ const { publicRateLimit } = require("./middlewares/ratelimit");
 const app = express();
 const port = process.env.PORT || 8800;
 
-// ===== CORS =====
-const allowedOrigins = [
-  'https://suree-garden.vercel.app',
-  'http://localhost:5173'
-];
+// ===== CORS setup - อ่านค่า FRONTEND_ORIGINS จาก ENV =====
+// FRONTEND_ORIGINS คาดเป็น comma-separated list เช่น:
+// "https://suree-garden.vercel.app,https://suree-garden-backend-deploy.vercel.app,http://localhost:5173"
+const envOrigins = (process.env.FRONTEND_ORIGINS || '')
+  .split(',')
+  .map(s => s.trim())
+  .filter(Boolean);
+
+// ถ้าอยากเก็บ FRONTEND_ORIGIN เดิมไว้ (compat) ให้รวมด้วย
+if (process.env.FRONTEND_ORIGIN) {
+  envOrigins.push(process.env.FRONTEND_ORIGIN.trim());
+}
+
+// เติมค่า localhost dev เสมอ (ไม่ซ้ำ)
+const devLocal = 'http://localhost:5173';
+if (!envOrigins.includes(devLocal)) envOrigins.push(devLocal);
+
+// สร้างชุด allowedOrigins สุดท้าย (dedupe)
+const allowedOrigins = Array.from(new Set(envOrigins));
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) callback(null, true);
-    else callback(new Error(`CORS policy: Origin ${origin} not allowed`));
+    // ถ้าไม่มี origin (เช่น Postman, server-side request) ให้อนุญาต
+    if (!origin) return callback(null, true);
+
+    // ถ้ตรงกับรายการที่ตั้งไว้ ให้อนุญาต
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+
+    // ถ้าต้องการเปิด wildcard สำหรับ vercel preview (ไม่แนะนำเป็น default)
+    // ตัวอย่าง (คอมเมนต์ไว้) — เปิดใช้เฉพาะถ้าต้องการจริงๆ:
+    // try {
+    //   const u = new URL(origin);
+    //   if (u.hostname.endsWith('.vercel.app')) return callback(null, true);
+    // } catch (e) {}
+
+    // ปฏิเสธค่าอื่น
+    return callback(new Error(`CORS policy: Origin ${origin} not allowed`));
   },
   credentials: true
 }));
@@ -99,7 +125,10 @@ function printRoutes(stack, prefix = '') {
       const methods = Object.keys(layer.route.methods).join(', ').toUpperCase();
       console.log(`${methods} ${prefix}${layer.route.path}`);
     } else if (layer.name === 'router' && layer.handle.stack) {
-      printRoutes(layer.handle.stack, prefix + (layer.regexp.source.replace('\\/?', '').replace('^', '').replace('?', '').replace('\\', '') || ''));
+      // ประมวลผล router ที่ nested
+      printRoutes(layer.handle.stack, prefix + (layer.regexp && layer.regexp.source
+        ? layer.regexp.source.replace('\\/?', '').replace('^', '').replace('?', '').replace(/\\+/g, '')
+        : ''));
     }
   });
 }
