@@ -12,9 +12,9 @@ const loginLimiter = rateLimit({
   message: { message: 'Too many login attempts, try again later.' }
 });
 
-
-router.post('/admin/login', loginLimiter, loginAdmin);
-router.get('/admin/me', requireAdminAuth, getMe);
-router.post('/admin/logout', requireAdminAuth, logoutAdmin);
+// แก้ path ให้ตรงกับ prefix /api/admin
+router.post('/login', loginLimiter, loginAdmin);
+router.get('/me', requireAdminAuth, getMe);
+router.post('/logout', requireAdminAuth, logoutAdmin);
 
 module.exports = router;
