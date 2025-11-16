@@ -1,3 +1,4 @@
+// frontend/src/pages/RoomType.jsx
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { useParams, Navigate, useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";

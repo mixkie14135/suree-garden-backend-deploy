@@ -9,16 +9,15 @@ const ctrl = require('./dashboard.controller');
 // ตัวอย่างนี้ “เปิด” ไว้เพื่อความปลอดภัย
 
 // ROOMS
-router.get('/dashboard/rooms/status',        requireAdminAuth, ctrl.roomsStatus);
-router.get('/dashboard/rooms/utilization',   requireAdminAuth, ctrl.roomsUtilization);
-router.get('/dashboard/rooms/turnover',      requireAdminAuth, ctrl.roomsTurnover);
-router.get('/dashboard/rooms/by-type',       requireAdminAuth, ctrl.roomsByType);
+router.get('/rooms/status',        requireAdminAuth, ctrl.roomsStatus);
+router.get('/rooms/utilization',   requireAdminAuth, ctrl.roomsUtilization);
+router.get('/rooms/turnover',      requireAdminAuth, ctrl.roomsTurnover);
+router.get('/rooms/by-type',       requireAdminAuth, ctrl.roomsByType);
 
 // BANQUETS
-router.get('/dashboard/banquets/status',      requireAdminAuth, ctrl.banquetsStatus);
-router.get('/dashboard/banquets/utilization', requireAdminAuth, ctrl.banquetsUtilization);
-
+router.get('/banquets/status',      requireAdminAuth, ctrl.banquetsStatus);
+router.get('/banquets/utilization', requireAdminAuth, ctrl.banquetsUtilization);
 // REVENUE
-router.get('/dashboard/revenue',              requireAdminAuth, ctrl.revenue);
+router.get('/revenue',              requireAdminAuth, ctrl.revenue);
 
 module.exports = router;

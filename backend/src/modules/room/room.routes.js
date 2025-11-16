@@ -1,3 +1,4 @@
+// backend/src/modules/room/room.routes.js
 const express = require('express');
 const {
   getRooms,
