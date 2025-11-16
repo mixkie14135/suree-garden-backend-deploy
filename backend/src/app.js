@@ -1,3 +1,4 @@
+// backend/src/app.js
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
@@ -71,10 +72,10 @@ app.use('/api/room/reservations/status', publicRateLimit);
 app.use('/api/reservations/banquet/status', publicRateLimit);
 app.use('/api/reservations/resolve', publicRateLimit);
 
-// Mount routes **แนะนำให้ mount แบบ prefix เฉพาะแต่ละโมดูล**
+// ===== Mount Routes แบบ prefix =====
 app.use('/api/admin', adminRoutes);
-app.use('/api/rooms', roomRoutes);       // เปลี่ยนจาก /api -> /api/rooms
-app.use('/api/banquets', banquetRoutes); // เปลี่ยนจาก /api -> /api/banquets
+app.use('/api/rooms', roomRoutes);
+app.use('/api/banquets', banquetRoutes);
 
 app.use('/api/reservations/room', reservationRoomRoutes);
 app.use('/api/reservations/banquet', reservationBanquetRoutes);
@@ -90,6 +91,23 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api', (_req, res) => {
   res.status(404).json({ status: 'error', message: 'API route not found' });
 });
+
+// ===== ฟังก์ชันตรวจสอบ Route ทั้งหมด =====
+function printRoutes(stack, prefix = '') {
+  stack.forEach(layer => {
+    if (layer.route && layer.route.path) {
+      const methods = Object.keys(layer.route.methods).join(', ').toUpperCase();
+      console.log(`${methods} ${prefix}${layer.route.path}`);
+    } else if (layer.name === 'router' && layer.handle.stack) {
+      printRoutes(layer.handle.stack, prefix + (layer.regexp.source.replace('\\/?', '').replace('^', '').replace('?', '').replace('\\', '') || ''));
+    }
+  });
+}
+
+// เรียกใช้งานหลัง mount routes ทั้งหมด
+console.log('==== ROUTES LIST ====');
+printRoutes(app._router.stack);
+console.log('====================');
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);

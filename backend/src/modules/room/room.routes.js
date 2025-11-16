@@ -14,13 +14,13 @@ const {
 
 const router = express.Router();
 
-// อ่านห้องทั้งหมด
-router.get('/', getRooms);               // GET /api/rooms
-router.get('/available', getAvailableRooms); // GET /api/rooms/available
+// Rooms
+router.get('/', getRooms);
+router.get('/available', getAvailableRooms);
 router.get('/:id/availability', getRoomAvailability);
 router.get('/:id', getRoom);
 
-// CRUD ห้อง
+// CRUD
 router.post('/', createRoom);
 router.put('/:id', updateRoom);
 router.delete('/:id', deleteRoom);
@@ -29,6 +29,5 @@ router.delete('/:id', deleteRoom);
 router.get('/types', getRoomTypes);
 router.post('/types', createRoomType);
 router.get('/types/:slug', getRoomTypeBySlug);
-router.get('/types/slug/:slug', getRoomTypeBySlug);
 
 module.exports = router;

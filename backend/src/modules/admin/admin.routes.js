@@ -1,3 +1,4 @@
+// backend/src/modules/admin/admin.routes.js
 const express = require('express');
 const rateLimit = require('express-rate-limit');
 const { loginAdmin, getMe, logoutAdmin } = require('../admin/admin.controller');
