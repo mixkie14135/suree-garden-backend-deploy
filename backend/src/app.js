@@ -38,7 +38,7 @@ const envOrigins = (process.env.FRONTEND_ORIGINS || '')
   .map(s => s.trim())
   .filter(Boolean);
 
-// ถ้าอยากเก็บ FRONTEND_ORIGIN เดิมไว้ (compat) ให้รวมด้วย
+// ถ้ามี FRONTEND_ORIGIN เดิม ให้รวมด้วย (compat)
 if (process.env.FRONTEND_ORIGIN) {
   envOrigins.push(process.env.FRONTEND_ORIGIN.trim());
 }
@@ -50,22 +50,39 @@ if (!envOrigins.includes(devLocal)) envOrigins.push(devLocal);
 // สร้างชุด allowedOrigins สุดท้าย (dedupe)
 const allowedOrigins = Array.from(new Set(envOrigins));
 
+// Allow Vercel preview domains? (true/false) — ตั้งใน Render env ถ้าต้องการอนุญาตทุก *.vercel.app
+const allowVercelPreviews = String(process.env.ALLOW_VERCEL_PREVIEWS || '').toLowerCase() === 'true';
+
 app.use(cors({
   origin: (origin, callback) => {
-    // ถ้าไม่มี origin (เช่น Postman, server-side request) ให้อนุญาต
-    if (!origin) return callback(null, true);
+    // ถ้าไม่มี origin (เช่น Postman, server-to-server) ให้อนุญาต
+    if (!origin) {
+      // log for debug in server logs
+      // console.log('CORS: no origin (server/postman) -> allowed');
+      return callback(null, true);
+    }
 
     // ถ้ตรงกับรายการที่ตั้งไว้ ให้อนุญาต
-    if (allowedOrigins.includes(origin)) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      // console.log(`CORS: origin ${origin} allowed (explicit)`);
+      return callback(null, true);
+    }
 
-    // ถ้าต้องการเปิด wildcard สำหรับ vercel preview (ไม่แนะนำเป็น default)
-    // ตัวอย่าง (คอมเมนต์ไว้) — เปิดใช้เฉพาะถ้าต้องการจริงๆ:
-    // try {
-    //   const u = new URL(origin);
-    //   if (u.hostname.endsWith('.vercel.app')) return callback(null, true);
-    // } catch (e) {}
+    // ถ้าอนุญาต Vercel preview ให้ตรวจสอบ hostname endsWith .vercel.app
+    if (allowVercelPreviews) {
+      try {
+        const u = new URL(origin);
+        if (u.hostname.endsWith('.vercel.app')) {
+          // console.log(`CORS: origin ${origin} allowed (vercel preview)`);
+          return callback(null, true);
+        }
+      } catch (e) {
+        // ignore parse error
+      }
+    }
 
     // ปฏิเสธค่าอื่น
+    // console.warn(`CORS: origin ${origin} NOT allowed`);
     return callback(new Error(`CORS policy: Origin ${origin} not allowed`));
   },
   credentials: true
@@ -124,8 +141,7 @@ function printRoutes(stack, prefix = '') {
     if (layer.route && layer.route.path) {
       const methods = Object.keys(layer.route.methods).join(', ').toUpperCase();
       console.log(`${methods} ${prefix}${layer.route.path}`);
-    } else if (layer.name === 'router' && layer.handle.stack) {
-      // ประมวลผล router ที่ nested
+    } else if (layer.name === 'router' && layer.handle && layer.handle.stack) {
       printRoutes(layer.handle.stack, prefix + (layer.regexp && layer.regexp.source
         ? layer.regexp.source.replace('\\/?', '').replace('^', '').replace('?', '').replace(/\\+/g, '')
         : ''));
@@ -141,4 +157,5 @@ console.log('====================');
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
   console.log(`Allowed CORS origins: ${allowedOrigins.join(', ')}`);
+  console.log(`ALLOW_VERCEL_PREVIEWS=${allowVercelPreviews}`);
 });
