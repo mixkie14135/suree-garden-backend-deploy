@@ -2,7 +2,6 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
-const path = require('path');
 const fs = require('fs');
 
 const { UPLOAD_ROOT, SLIP_DIR } = require('./utils/uploadPaths');
@@ -33,18 +32,14 @@ const port = process.env.PORT || 8800;
 
 // ===== CORS =====
 const allowedOrigins = [
-  'https://suree-garden.vercel.app', // production
-  'http://localhost:5173'            // frontend dev
+  'https://suree-garden.vercel.app',
+  'http://localhost:5173'
 ];
 
 app.use(cors({
-  origin: function(origin, callback) {
-    // ถ้า origin ไม่มีค่า (เช่น Postman, server-to-server) ให้อนุญาต
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error(`CORS policy: Origin ${origin} not allowed`));
-    }
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) callback(null, true);
+    else callback(new Error(`CORS policy: Origin ${origin} not allowed`));
   },
   credentials: true
 }));
@@ -63,12 +58,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// ทุก /api ตอบ JSON
-app.use('/api', (req, res, next) => {
-  res.setHeader('Content-Type', 'application/json; charset=utf-8');
-  next();
-});
-
 // Healthcheck
 app.get('/api/ping', (_req, res) => res.json({ message: 'API is working!' }));
 
@@ -82,23 +71,23 @@ app.use('/api/room/reservations/status', publicRateLimit);
 app.use('/api/reservations/banquet/status', publicRateLimit);
 app.use('/api/reservations/resolve', publicRateLimit);
 
-// Mount routes
-app.use('/api', adminRoutes);
-app.use('/api', roomRoutes);
-app.use('/api', banquetRoutes);
+// Mount routes **แนะนำให้ mount แบบ prefix เฉพาะแต่ละโมดูล**
+app.use('/api/admin', adminRoutes);
+app.use('/api/rooms', roomRoutes);       // เปลี่ยนจาก /api -> /api/rooms
+app.use('/api/banquets', banquetRoutes); // เปลี่ยนจาก /api -> /api/banquets
 
-app.use('/api', reservationRoomRoutes);
-app.use('/api', reservationBanquetRoutes);
-app.use('/api', reservationResolveRoutes);
+app.use('/api/reservations/room', reservationRoomRoutes);
+app.use('/api/reservations/banquet', reservationBanquetRoutes);
+app.use('/api/reservations/resolve', reservationResolveRoutes);
 
-app.use('/api', roomImageRoutes);
-app.use('/api', banquetImageRoutes);
+app.use('/api/room-images', roomImageRoutes);
+app.use('/api/banquet-images', banquetImageRoutes);
 
 app.use('/api/payments', paymentRoutes);
-app.use('/api', dashboardRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 // 404 เฉพาะ /api
-app.use('/api', (req, res) => {
+app.use('/api', (_req, res) => {
   res.status(404).json({ status: 'error', message: 'API route not found' });
 });
 

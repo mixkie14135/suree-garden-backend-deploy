@@ -1,4 +1,3 @@
-// backend/src/modules/banquet/banquet.routes.js
 const express = require('express');
 const {
   getBanquets,
@@ -12,17 +11,15 @@ const {
 
 const router = express.Router();
 
-// ---- เส้นคงที่/ค้นหา รวมหลายห้อง (มาก่อน :id)
-router.get('/banquets', getBanquets);
-router.get('/banquets/available', getAvailableBanquets);
+// เส้นทางหลัก
+router.get('/', getBanquets);               // GET /api/banquets
+router.get('/available', getAvailableBanquets);
+router.get('/:id', getBanquet);
+router.get('/:id/availability', getBanquetAvailability);
 
-// ---- รายห้อง + availability
-router.get('/banquets/:id', getBanquet);
-router.get('/banquets/:id/availability', getBanquetAvailability);
-
-// ---- สร้าง/แก้/ลบ
-router.post('/banquets', createBanquet);
-router.put('/banquets/:id', updateBanquet);
-router.delete('/banquets/:id', deleteBanquet);
+// CRUD
+router.post('/', createBanquet);
+router.put('/:id', updateBanquet);
+router.delete('/:id', deleteBanquet);
 
 module.exports = router;
