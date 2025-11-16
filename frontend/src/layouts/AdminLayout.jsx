@@ -1,10 +1,9 @@
-// frontend/src/layouts/AdminLayout.jsx
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import logo from "../assets/logo_v1.png";
 import Swal from "sweetalert2";
 import "sweetalert2/dist/sweetalert2.min.css";
+import { apiPost } from "../lib/api.js";
 
-/* ---------- Small helper for menu item ---------- */
 const MenuItem = ({ to, icon, children, end }) => (
   <NavLink
     to={to}
@@ -36,7 +35,10 @@ export default function AdminLayout() {
     });
 
     if (res.isConfirmed) {
-      localStorage.removeItem("admin_token");
+      try {
+        await apiPost("/admin/logout"); // backend ลบ session/cookie
+      } catch {}
+      localStorage.removeItem("admin_token"); // ลบ localStorage
       await Swal.fire({
         icon: "success",
         title: "ออกจากระบบแล้ว",
@@ -55,21 +57,9 @@ export default function AdminLayout() {
         </div>
 
         <nav className="menu">
-          {/* Dashboard */}
-          <MenuItem to="/admin" end icon={<DashboardIcon />}>
-            Dashboard
-          </MenuItem>
-
-          {/* Rooms */}
-          <MenuItem to="/admin/rooms" icon={<BedIcon />}>
-            จัดการห้อง
-          </MenuItem>
-
-
-          {/* Bookings */}
-          <MenuItem to="/admin/bookings" icon={<CalIcon />}>
-            จัดการการจอง
-          </MenuItem>
+          <MenuItem to="/admin" end icon={<DashboardIcon />}>Dashboard</MenuItem>
+          <MenuItem to="/admin/rooms" icon={<BedIcon />}>จัดการห้อง</MenuItem>
+          <MenuItem to="/admin/bookings" icon={<CalIcon />}>จัดการการจอง</MenuItem>
 
           <button className="menu-item logout" onClick={logout}>
             <span className="mi-ic"><LogoutIcon /></span>
@@ -85,7 +75,7 @@ export default function AdminLayout() {
   );
 }
 
-/* ---------------- Icons (inline SVG) ---------------- */
+/* Inline Icons */
 function DashboardIcon() { return <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10Zm10 8h8V3h-8v18ZM3 21h8v-6H3v6Z"/></svg>; }
 function BedIcon() { return <svg viewBox="0 0 24 24"><path d="M2 18v-6a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v6h-2v-2H4v2H2Zm2-4h12v-2a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v2Z"/></svg>; }
 function CalIcon() { return <svg viewBox="0 0 24 24"><path d="M7 2h2v2h6V2h2v2h3v18H4V4h3V2Zm13 6H4v12h16V8Z"/></svg>; }
