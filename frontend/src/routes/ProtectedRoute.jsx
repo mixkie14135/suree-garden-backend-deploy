@@ -1,3 +1,4 @@
+// frontend/src/routes/ProtectedRoute.jsx
 import { Navigate, Outlet } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { apiGet } from "../lib/api.js";

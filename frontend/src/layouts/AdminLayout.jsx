@@ -1,3 +1,4 @@
+// frontend/src/layouts/AdminLayout.jsx
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import logo from "../assets/logo_v1.png";
 import Swal from "sweetalert2";
