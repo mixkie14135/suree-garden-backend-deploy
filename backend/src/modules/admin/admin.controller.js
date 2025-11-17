@@ -4,9 +4,7 @@ const jwt = require('jsonwebtoken');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '1d';
-const USE_COOKIE = process.env.AUTH_COOKIE === 'true'; // ตั้ง true ถ้าจะให้ส่ง token เป็น httpOnly cookie
-
-
+const USE_COOKIE = process.env.AUTH_COOKIE === 'true'; // จะเป็น false ตาม .env
 
 // POST /api/admin/login
 exports.loginAdmin = async (req, res) => {
@@ -35,16 +33,19 @@ exports.loginAdmin = async (req, res) => {
     };
 
     if (USE_COOKIE) {
+      // ไม่ต้องใช้ เพราะเราใช้ Bearer token
       res.cookie('token', token, {
         httpOnly: true,
-        secure: false, // production ควร true + ใช้ https
+        secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
         maxAge: 24 * 60 * 60 * 1000
       });
       return res.json({ status: 'ok', admin: safeAdmin });
     }
 
+    // ส่ง token ให้ frontend จัดการเก็บเอง (localStorage)
     return res.json({ status: 'ok', token, admin: safeAdmin });
+
   } catch (err) {
     res.status(500).json({ status: 'error', message: err.message });
   }
@@ -67,11 +68,7 @@ exports.getMe = async (req, res) => {
 // POST /api/admin/logout
 exports.logoutAdmin = async (_req, res) => {
   try {
-    if (USE_COOKIE) {
-      res.clearCookie('token');
-      return res.json({ status: 'ok', message: 'Logged out' });
-    }
-    // ถ้าใช้ Bearer token ให้ frontend ลบ token เอง
+    // ถ้า USE_COOKIE เป็น false frontend จะลบ token เอง
     return res.json({ status: 'ok', message: 'Client should discard token' });
   } catch (err) {
     res.status(500).json({ status: 'error', message: err.message });
