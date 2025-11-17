@@ -12,7 +12,8 @@ fs.mkdirSync(UPLOAD_ROOT, { recursive: true });
 
 // ===== Routes =====
 const adminRoutes = require('./modules/admin/admin.routes');
-const roomRoutes = require('./modules/room/room.routes'); // รวม roomType.routes.js ภายในนี้
+const roomRoutes = require('./modules/room/room.routes'); // /api/rooms/*
+const roomTypeRoutes = require('./modules/room/roomType.routes'); // /api/room-types/*
 const banquetRoutes = require('./modules/banquet/banquet.routes');
 
 const reservationRoomRoutes = require('./modules/reservation/room/reservationRoom.routes');
@@ -30,7 +31,10 @@ const { publicRateLimit } = require('./middlewares/ratelimit');
 const app = express();
 const port = process.env.PORT || 8800;
 
-// ===== CORS setup =====
+// ===== trust proxy (แก้ปัญหา X-Forwarded-For / rate-limit) =====
+app.set('trust proxy', 1);
+
+// ===== CORS setup (อ่าน FRONTEND_ORIGINS จาก ENV) =====
 const envOrigins = (process.env.FRONTEND_ORIGINS || '')
   .split(',')
   .map(s => s.trim())
@@ -45,14 +49,18 @@ const allowVercelPreviews = String(process.env.ALLOW_VERCEL_PREVIEWS || '').toLo
 
 app.use(cors({
   origin: (origin, callback) => {
+    // allow requests with no origin (Postman / server-to-server)
     if (!origin) return callback(null, true);
+
     if (allowedOrigins.includes(origin)) return callback(null, true);
 
     if (allowVercelPreviews) {
       try {
         const u = new URL(origin);
         if (u.hostname.endsWith('.vercel.app')) return callback(null, true);
-      } catch {}
+      } catch (e) {
+        // ignore parse error
+      }
     }
 
     return callback(new Error(`CORS policy: Origin ${origin} not allowed`));
@@ -89,7 +97,8 @@ app.use('/api/reservations/resolve', publicRateLimit);
 
 // ===== Mount Routes =====
 app.use('/api/admin', adminRoutes);
-app.use('/api/rooms', roomRoutes);       // รวม roomType
+app.use('/api/rooms', roomRoutes);       // /api/rooms/*
+app.use('/api/room-types', roomTypeRoutes); // <-- ถ้าต้องการรองรับ frontend ที่เรียก /api/room-types/...
 app.use('/api/banquets', banquetRoutes);
 
 app.use('/api/reservations/room', reservationRoomRoutes);

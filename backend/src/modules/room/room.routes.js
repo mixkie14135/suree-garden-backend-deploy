@@ -26,7 +26,7 @@ router.post('/', createRoom);
 router.put('/:id', updateRoom);
 router.delete('/:id', deleteRoom);
 
-// Room types
+// Room types (mounted under /api/rooms/types)
 router.get('/types', getRoomTypes);
 router.post('/types', createRoomType);
 router.get('/types/:slug', getRoomTypeBySlug);
