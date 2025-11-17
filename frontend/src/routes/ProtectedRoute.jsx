@@ -1,4 +1,3 @@
-// frontend/src/routes/ProtectedRoute.jsx
 import { Navigate, Outlet } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { apiGet } from "../lib/api.js";
@@ -23,5 +22,7 @@ export default function ProtectedRoute() {
   }, []);
 
   if (loading) return <div>กำลังตรวจสอบสิทธิ์...</div>;
+
+  // ถ้าไม่ได้ login → redirect /admin/login
   return authorized ? <Outlet /> : <Navigate to="/admin/login" replace />;
 }
