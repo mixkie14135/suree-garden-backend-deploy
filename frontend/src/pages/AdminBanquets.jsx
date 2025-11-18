@@ -1,4 +1,4 @@
-// src/pages/AdminBanquets.jsx
+// frontend/src/pages/AdminBanquets.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import Swal from "sweetalert2";
 import {
@@ -196,6 +196,7 @@ export default function AdminBanquets({ embedded = false }) {
   const toast = (icon, title) =>
     Swal.fire({ toast: true, position: "top-end", showConfirmButton: false, timer: 1600, icon, title });
 
+  // ลบห้องจัดเลี้ยง (resource)
   const onDelete = async (id, nameForMsg) => {
     setMenuRowId(null);
     const ok = await confirmDelete(`ต้องการลบห้องจัดเลี้ยง “${nameForMsg}” หรือไม่?`);
@@ -247,7 +248,7 @@ export default function AdminBanquets({ embedded = false }) {
         if (id && newFiles.length) {
           let ok = 0, fail = 0;
           for (const f of newFiles) {
-            try { await apiUpload(`/banquets/${id}/images`, f, "file"); ok++; }
+            try { await apiUpload(`/banquet-images/${id}/images`, f, "file"); ok++; }
             catch { fail++; }
           }
           if (ok) Swal.fire({ toast:true, position:"top-end", icon:"success", title:`อัปโหลดรูปสำเร็จ ${ok} ไฟล์`, timer:1600, showConfirmButton:false });
@@ -262,7 +263,7 @@ export default function AdminBanquets({ embedded = false }) {
         if (id && newFiles.length) {
           let ok = 0, fail = 0;
           for (const f of newFiles) {
-            try { await apiUpload(`/banquets/${id}/images`, f, "file"); ok++; }
+            try { await apiUpload(`/banquet-images/${id}/images`, f, "file"); ok++; }
             catch { fail++; }
           }
           if (ok) Swal.fire({ toast:true, position:"top-end", icon:"success", title:`อัปโหลดรูปสำเร็จ ${ok} ไฟล์`, timer:1600, showConfirmButton:false });
@@ -286,7 +287,8 @@ export default function AdminBanquets({ embedded = false }) {
   async function openImageManager(row) {
     try {
       setLoading(true);
-      const list = await apiGet(`/banquets/${row.id}/images`);
+      // ดึงจาก service สำหรับภาพ
+      const list = await apiGet(`/banquet-images/${row.id}/images`);
       const items = toArray(list).map((i) => ({
         id: i.image_id,
         url: normalizePath(i.image_url || i.url),
@@ -311,11 +313,16 @@ export default function AdminBanquets({ embedded = false }) {
   }
   async function onUploadFiles(e) {
     const files = Array.from(e.target.files || []);
-    if (!files.length || !imgMgr.banquetId) return;
+    if (!files.length || !imgMgr.banquetId) {
+      if (e?.target) e.target.value = "";
+      return;
+    }
     try {
       setImgMgr((s) => ({ ...s, uploading: true }));
-      for (const f of files) await apiUpload(`/banquets/${imgMgr.banquetId}/images`, f, "file");
-      const list = await apiGet(`/banquets/${imgMgr.banquetId}/images`);
+      for (const f of files) {
+        await apiUpload(`/banquet-images/${imgMgr.banquetId}/images`, f, "file");
+      }
+      const list = await apiGet(`/banquet-images/${imgMgr.banquetId}/images`);
       const items = toArray(list).map((i) => ({ id: i.image_id, url: normalizePath(i.image_url || i.url) }));
       setImgMgr((s) => ({ ...s, items, uploading: false }));
       await refreshBanquets();
@@ -324,14 +331,14 @@ export default function AdminBanquets({ embedded = false }) {
       Swal.fire({ icon: "error", title: "อัปโหลดไม่สำเร็จ", text: String(err.message || err) });
       setImgMgr((s) => ({ ...s, uploading: false }));
     } finally {
-      e.target.value = "";
+      if (e?.target) e.target.value = "";
     }
   }
   async function onDeleteImage(imageId) {
     const ok = await confirmDelete("ต้องการลบรูปนี้หรือไม่?");
     if (!ok) return;
     try {
-      await apiDelete(`/banquets/${imgMgr.banquetId}/images/${imageId}`);
+      await apiDelete(`/banquet-images/${imgMgr.banquetId}/images/${imageId}`);
       setImgMgr((s) => ({ ...s, items: s.items.filter((x) => x.id !== imageId) }));
       await refreshBanquets();
       toast("success", "ลบรูปแล้ว");
@@ -371,14 +378,12 @@ export default function AdminBanquets({ embedded = false }) {
 
   return (
     <div className="adminPage" onClick={() => setMenuRowId(null)}>
-      {/* ถ้าไม่ embedded ให้มีหัวเรื่องของหน้าด้วย */}
       {!embedded && (
         <div className="adminPageHeader">
           <h2>จัดการห้องจัดเลี้ยง</h2>
         </div>
       )}
 
-      {/* Toolbar (info + search ด้านซ้าย / filter+sort+add ด้านขวา) */}
       <div className="toolbar">
         <div className="toolLeft">
           <div className="info">
@@ -421,11 +426,10 @@ export default function AdminBanquets({ embedded = false }) {
       {error && <div style={{ color: "#b00020", marginBottom: 12 }}>{error}</div>}
       {loading && <div style={{ marginBottom: 12 }}>กำลังโหลด...</div>}
 
-      {/* ตาราง — ใช้คลาส .adminRooms เพื่อ reuse grid เดิม */}
       <div className="card table adminRooms">
         <div className="tHead">
           <div>ห้องจัดเลี้ยง</div>
-          <div>ประเภท</div> {/* ไม่มีประเภทจริง ให้เว้นไว้ให้ layout เดิม */}
+          <div>ประเภท</div>
           <div className="center">จำนวนคน</div>
           <div className="right">ราคา/ชั่วโมง</div>
           <div className="center">สถานะ</div>
@@ -434,7 +438,6 @@ export default function AdminBanquets({ embedded = false }) {
 
         {view.map((r) => (
           <div className="tRow" key={r.id} onClick={(e) => e.stopPropagation()}>
-            {/* ห้อง + action-menu */}
             <div className="cell--room">
               <button
                 className="iconBtn roomEdit"
@@ -458,19 +461,11 @@ export default function AdminBanquets({ embedded = false }) {
               )}
             </div>
 
-            {/* ประเภท (ไม่มี) */}
             <div>-</div>
-
-            {/* คนต่อห้อง */}
             <div className="center">{r.capacity}</div>
-
-            {/* ราคา/ชั่วโมง */}
             <div className="right"><PriceHourTag value={r.pricePerHour} /></div>
-
-            {/* สถานะ */}
             <div className="center"><StatusBadge status={r.status} /></div>
 
-            {/* รูปภาพ */}
             <div className="right cell--thumb">
               <div className="thumbMini" title="ดู/จัดการรูป" onClick={() => openImageManager(r)} style={{ cursor: "pointer" }}>
                 {r.images[0]?.url ? (

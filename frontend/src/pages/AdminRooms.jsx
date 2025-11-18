@@ -1,4 +1,4 @@
-// src/pages/AdminRooms.jsx
+// frontend/src/pages/AdminRooms.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import Swal from "sweetalert2";
 import {
@@ -58,7 +58,6 @@ function toViewRoom(row) {
   };
 }
 
-/** เผื่อ backend คืนโครงสร้างแตกต่างกัน ให้ดึง room_id ได้เสมอ */
 function extractRoomId(created) {
   if (!created || typeof created !== "object") return null;
   return (
@@ -83,18 +82,15 @@ export default function AdminRooms({ embedded = false }) {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState(emptyForm());
 
-  // create: เลือกรูปไว้ก่อนกดบันทึก
   const [newFiles, setNewFiles] = useState([]);
   const [newPreviews, setNewPreviews] = useState([]);
   const fileInputRef = useRef(null);
 
-  // image manager (ห้องเดิม)
   const [imgMgr, setImgMgr] = useState({
     open: false, roomId: null, roomNo: "", items: [], uploading: false,
     lightbox: { open: false, index: 0 },
   });
 
-  // เมนูเล็กใต้ปุ่มดินสอ
   const [menuRowId, setMenuRowId] = useState(null);
 
   useEffect(() => {
@@ -132,7 +128,6 @@ export default function AdminRooms({ embedded = false }) {
     setRooms((rs?.items || rs || []).map(toViewRoom));
   }
 
-  /** จัดเรียงเลขห้องแบบ numeric-aware */
   const compareRoomNo = (a, b) => {
     const na = String(a ?? "");
     const nb = String(b ?? "");
@@ -219,7 +214,6 @@ export default function AdminRooms({ embedded = false }) {
     }
   };
 
-  /** สร้าง/แก้ไขห้อง + อัปโหลดรูป (โหมดสร้าง) */
   const onSave = async () => {
     try {
       if (!form.number?.trim()) throw new Error("กรุณากรอกหมายเลขห้อง");
@@ -241,11 +235,9 @@ export default function AdminRooms({ embedded = false }) {
       let roomId = form.id;
 
       if (!form.id) {
-        // CREATE
         const created = await apiPost(`/rooms`, payload);
         roomId = extractRoomId(created);
 
-        // ถ้าหา id ไม่เจอ ให้ดึงใหม่จาก backend แล้วหาเลขห้องล่าสุด
         if (!roomId) {
           const all = await apiGet("/rooms", { include: "type,images", limit: 500 });
           const arr = (all?.items || all || []).map(toViewRoom);
@@ -256,11 +248,11 @@ export default function AdminRooms({ embedded = false }) {
           }
         }
 
-        // อัปโหลดรูปถ้ามี
+        // Upload images via the image service (correct endpoint)
         if (roomId && newFiles.length) {
           let ok = 0, fail = 0;
           for (const f of newFiles) {
-            try { await apiUpload(`/rooms/${roomId}/images`, f, "file"); ok++; }
+            try { await apiUpload(`/room-images/${roomId}/images`, f, "file"); ok++; }
             catch { fail++; }
           }
           if (ok) Swal.fire({ toast:true, position:"top-end", icon:"success", title:`อัปโหลดรูปสำเร็จ ${ok} ไฟล์`, timer:1600, showConfirmButton:false });
@@ -269,14 +261,12 @@ export default function AdminRooms({ embedded = false }) {
 
         Swal.fire({ toast:true, position:"top-end", icon:"success", title:"เพิ่มห้องสำเร็จ", timer:1600, showConfirmButton:false });
       } else {
-        // UPDATE
         await apiPut(`/rooms/${roomId}`, payload);
 
-        // เผื่ออนุญาตแนบรูปตอนแก้ไข
         if (roomId && newFiles.length) {
           let ok = 0, fail = 0;
           for (const f of newFiles) {
-            try { await apiUpload(`/rooms/${roomId}/images`, f, "file"); ok++; }
+            try { await apiUpload(`/room-images/${roomId}/images`, f, "file"); ok++; }
             catch { fail++; }
           }
           if (ok) Swal.fire({ toast:true, position:"top-end", icon:"success", title:`อัปโหลดรูปสำเร็จ ${ok} ไฟล์`, timer:1600, showConfirmButton:false });
@@ -299,7 +289,8 @@ export default function AdminRooms({ embedded = false }) {
   async function openImageManager(room) {
     try {
       setLoading(true);
-      const list = await apiGet(`/rooms/${room.id}/images`);
+      // <-- correct image service path
+      const list = await apiGet(`/room-images/${room.id}/images`);
       const items = toArray(list).map((i) => ({
         id: i.image_id,
         url: normalizePath(i.image_url || i.url),
@@ -324,11 +315,17 @@ export default function AdminRooms({ embedded = false }) {
   }
   async function onUploadFiles(e) {
     const files = Array.from(e.target.files || []);
-    if (!files.length || !imgMgr.roomId) return;
+    if (!files.length || !imgMgr.roomId) {
+      if (e?.target) e.target.value = "";
+      return;
+    }
     try {
       setImgMgr((s) => ({ ...s, uploading: true }));
-      for (const f of files) await apiUpload(`/rooms/${imgMgr.roomId}/images`, f, "file");
-      const list = await apiGet(`/rooms/${imgMgr.roomId}/images`);
+      for (const f of files) {
+        // <-- correct image service path for upload
+        await apiUpload(`/room-images/${imgMgr.roomId}/images`, f, "file");
+      }
+      const list = await apiGet(`/room-images/${imgMgr.roomId}/images`);
       const items = toArray(list).map((i) => ({ id: i.image_id, url: normalizePath(i.image_url || i.url) }));
       setImgMgr((s) => ({ ...s, items, uploading: false }));
       await refreshRooms();
@@ -337,14 +334,15 @@ export default function AdminRooms({ embedded = false }) {
       Swal.fire({ icon: "error", title: "อัปโหลดไม่สำเร็จ", text: String(err.message || err) });
       setImgMgr((s) => ({ ...s, uploading: false }));
     } finally {
-      e.target.value = "";
+      if (e?.target) e.target.value = "";
     }
   }
   async function onDeleteImage(imageId) {
     const ok = await confirmDelete("ต้องการลบรูปนี้หรือไม่?");
     if (!ok) return;
     try {
-      await apiDelete(`/rooms/${imgMgr.roomId}/images/${imageId}`);
+      // <-- correct delete path
+      await apiDelete(`/room-images/${imgMgr.roomId}/images/${imageId}`);
       setImgMgr((s) => ({ ...s, items: s.items.filter((x) => x.id !== imageId) }));
       await refreshRooms();
       toast("success", "ลบรูปแล้ว");
@@ -384,7 +382,6 @@ export default function AdminRooms({ embedded = false }) {
   return (
     <div className="adminPage" onClick={() => setMenuRowId(null)}>
 
-      {/* ถ้าไม่ได้ฝังจากภายนอก คง header ไว้ตามเดิม */}
       {!embedded && (
         <div className="adminPageHeader">
           <h2>
@@ -393,7 +390,6 @@ export default function AdminRooms({ embedded = false }) {
         </div>
       )}
 
-      {/* Toolbar (info + search ซ้าย / filter+sort+add ขวา) */}
       <div className="toolbar">
         <div className="toolLeft">
           <div className="info">
@@ -447,7 +443,6 @@ export default function AdminRooms({ embedded = false }) {
 
         {view.map((r) => (
           <div className="tRow" key={r.id} onClick={(e) => e.stopPropagation()}>
-            {/* ห้อง + action-menu */}
             <div className="cell--room">
               <button
                 className="iconBtn roomEdit"
@@ -490,7 +485,6 @@ export default function AdminRooms({ embedded = false }) {
         ))}
       </div>
 
-      {/* Modal เพิ่ม/แก้ไข */}
       {editing && (
         <div className="modalOverlay" onClick={closeModal}>
           <div className="modalCard" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
@@ -542,7 +536,6 @@ export default function AdminRooms({ embedded = false }) {
                 </div>
               </div>
 
-              {/* รูปในโมดัล (create เท่านั้น) */}
               <div className="modalGallery">
 
                 {isCreate ? (
@@ -590,7 +583,6 @@ export default function AdminRooms({ embedded = false }) {
         </div>
       )}
 
-      {/* Image Manager */}
       {imgMgr.open && (
         <div className="modalOverlay" onClick={closeImageManager}>
           <div className="modalCard" role="dialog" aria-modal="true" onClick={(e)=>e.stopPropagation()}>
@@ -651,7 +643,6 @@ function StatusBadge({ status }) {
               status === "maintenance" ? "" : "bad";
   return <span className={"pill " + cls}>{label}</span>;
 }
-
 
 function PriceTag({ value }) {
   return <span className="priceTag">{Number(value || 0).toLocaleString()} <small>บาท</small></span>;
