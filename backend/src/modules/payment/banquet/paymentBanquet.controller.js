@@ -7,12 +7,8 @@ const { uploadPrivate, signPrivate } = require('../../../utils/storage');
 exports.uploadSlipBanquet = async (req, res) => {
   try {
     const { reservation_code, amount, method = 'bank_transfer' } = req.body;
-    if (!reservation_code || !amount) {
-      return res.status(400).json({ message: 'reservation_code and amount are required' });
-    }
-    if (!req.file) {
-      return res.status(400).json({ message: 'slip file is required (key: slip)' });
-    }
+    if (!reservation_code || !amount) return res.status(400).json({ message: 'reservation_code and amount are required' });
+    if (!req.file) return res.status(400).json({ message: 'slip file is required (key: slip)' });
 
     const r = await prisma.reservation_banquet.findUnique({
       where: { reservation_code },
@@ -38,7 +34,7 @@ exports.uploadSlipBanquet = async (req, res) => {
           method,
           amount: String(amount),
           payment_status: 'pending',
-          slip_url: objectPath, // เก็บ path private
+          slip_url: objectPath,
         },
         select: { payment_id: true, payment_status: true, slip_url: true }
       });
@@ -68,7 +64,7 @@ exports.uploadSlipBanquet = async (req, res) => {
 exports.viewSlipBanquetAdmin = async (req, res) => {
   try {
     const id = Number(req.params.id);
-    const by = (req.query.by === 'payment') ? 'payment' : 'reservation';
+    const by = req.query.by === 'payment' ? 'payment' : 'reservation';
 
     let path;
     if (by === 'payment') {

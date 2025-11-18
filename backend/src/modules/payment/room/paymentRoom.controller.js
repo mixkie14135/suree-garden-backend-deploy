@@ -7,12 +7,8 @@ const { uploadPrivate, signPrivate } = require('../../../utils/storage');
 exports.uploadSlipRoom = async (req, res) => {
   try {
     const { reservation_code, amount, method = 'bank_transfer' } = req.body;
-    if (!reservation_code || !amount) {
-      return res.status(400).json({ message: 'reservation_code and amount are required' });
-    }
-    if (!req.file) {
-      return res.status(400).json({ message: 'slip file is required (key: slip)' });
-    }
+    if (!reservation_code || !amount) return res.status(400).json({ message: 'reservation_code and amount are required' });
+    if (!req.file) return res.status(400).json({ message: 'slip file is required (key: slip)' });
 
     const r = await prisma.reservation_room.findUnique({
       where: { reservation_code },
@@ -38,7 +34,7 @@ exports.uploadSlipRoom = async (req, res) => {
           method,
           amount: String(amount),
           payment_status: 'pending',
-          slip_url: objectPath, // เก็บ path private
+          slip_url: objectPath,
         },
         select: { payment_id: true, payment_status: true, slip_url: true }
       });
@@ -67,8 +63,8 @@ exports.uploadSlipRoom = async (req, res) => {
 // ให้แอดมินดึง signed URL เพื่อดูสลิป (30 นาที)
 exports.viewSlipRoomAdmin = async (req, res) => {
   try {
-    const id = Number(req.params.id); // reservation_id หรือ payment_id เลือกแบบใดแบบหนึ่ง
-    const by = (req.query.by === 'payment') ? 'payment' : 'reservation';
+    const id = Number(req.params.id);
+    const by = req.query.by === 'payment' ? 'payment' : 'reservation';
 
     let path;
     if (by === 'payment') {
@@ -85,7 +81,7 @@ exports.viewSlipRoomAdmin = async (req, res) => {
       path = row.slip_url;
     }
 
-    const url = await signPrivate(path, { expiresIn: 60 * 30 });
+    const url = await signPrivate(path, { expiresIn: 60 * 30 }); // 30 นาที
     res.json({ url });
   } catch (e) {
     res.status(500).json({ message: 'Cannot sign URL' });
